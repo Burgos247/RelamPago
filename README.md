@@ -1,222 +1,132 @@
-# ⚡ Lightning Starter Kit
+# ⚡ RelámPago
 
-Starter kit oficial para las **Lightning Hackathons 2026** de La Crypta.
+**Cobrá con Lightning Network, sin complicaciones.**
 
-Incluye ejemplos, utilidades y guía asistida con AI para construir tu proyecto.
+RelámPago es una app web (PWA) pensada para comerciantes y emprendedores de Latinoamérica que quieren recibir pagos con Bitcoin Lightning — sin necesidad de saber nada técnico.
 
-## 🚀 Inicio rápido
+> Proyecto desarrollado para la **Lightning Hackathon FOUNDATIONS 2026** de [La Crypta](https://lacrypta.ar).
 
-### Opción 1: Con Claude Code (recomendado)
+---
+
+## 🎯 ¿Qué problema resuelve?
+
+Lightning Network permite pagos instantáneos y casi sin comisiones. Pero la experiencia de cobrar sigue siendo para técnicos: invoices, bolt11, sats... RelámPago elimina esa barrera.
+
+**En 2 pasos, cualquier comerciante tiene su propio QR para cobrar.**
+
+---
+
+## ✨ Funcionalidades
+
+| Feature | Descripción |
+|---------|-------------|
+| **QR permanente** | Generá tu QR una vez y pegalo en tu local. Tu cliente lo escanea y te paga |
+| **Cobro con monto fijo** | Ingresá cuánto querés cobrar en tu moneda local y generá un QR específico |
+| **9 monedas LATAM** | ARS, MXN, COP, BRL, CLP, PEN, UYU, USD, EUR con conversión en tiempo real |
+| **Detección automática de pagos** | La app detecta cuando te pagan y te avisa con sonido y animación |
+| **Historial de cobros** | Registro local de todos tus cobros con fecha, monto y concepto |
+| **PWA instalable** | Se instala como app nativa en el celular, funciona offline |
+| **Página de cobro compartible** | Compartí un link para que te paguen desde cualquier lugar |
+| **UX para novatos** | Lenguaje simple, pasos guiados, sin jerga técnica |
+
+---
+
+## 🚀 Demo rápida
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/lacrypta/lightning-starter.git
-cd lightning-starter
-
-# Abrir con Claude Code
-claude
-
-# El asistente te guía para construir tu proyecto
-```
-
-Claude va a:
-- Preguntarte qué querés construir
-- Proponerte ideas si no tenés
-- Guiarte paso a paso
-- Ayudarte a ganar la hackathon
-
-### Opción 2: Manual
-
-```bash
-# Clonar el repositorio
-git clone https://github.com/lacrypta/lightning-starter.git
-cd lightning-starter
+git clone https://github.com/Burgos247/RelamPago.git
+cd RelamPago
 
 # Instalar dependencias
 npm install
 
-# Ejecutar el frontend de demo
+# Iniciar servidor de desarrollo
 npm run dev
 ```
 
 Abrir http://localhost:5173 en el navegador.
 
-## 📦 Herramientas incluidas
+---
 
-| Herramienta | Descripción | Docs |
-|-------------|-------------|------|
-| **@getalby/sdk** | SDK de Alby para NWC y pagos | [Docs](https://github.com/getAlby/js-sdk) |
-| **@getalby/lightning-tools** | Utilidades: LNURL, Lightning Address | [Docs](https://github.com/getAlby/lightning-tools) |
-| **@nostr-dev-kit/ndk** | SDK para Nostr (identidad, eventos) | [Docs](https://github.com/nostr-dev-kit/ndk) |
-| **webln** | Standard para wallets Lightning | [Docs](https://webln.dev) |
+## 📱 ¿Cómo se usa?
 
-## 🔌 Nostr Wallet Connect (NWC)
+### Para el comerciante:
+1. Ingresá el nombre de tu negocio
+2. Poné tu Lightning Address (es gratis — creala en [Alby](https://getalby.com), [Blink](https://blink.sv) o [Primal](https://primal.net))
+3. ¡Listo! Ya tenés tu QR permanente para cobrar
 
-NWC permite conectar tu app a cualquier wallet Lightning compatible.
+### Para cobrar un monto específico:
+1. Andá a la pestaña **💰 Cobrar**
+2. Elegí tu moneda y poné el monto
+3. La app convierte a sats en tiempo real y genera el QR
+4. Tu cliente escanea y paga — vos recibís confirmación automática
 
-```javascript
-import { nwc } from "@getalby/sdk";
+---
 
-// Conectar con string NWC
-const client = new nwc.NWCClient({
-  nostrWalletConnectUrl: "nostr+walletconnect://..."
-});
+## 🏗️ Arquitectura
 
-// Crear invoice
-const invoice = await client.makeInvoice({
-  amount: 1000, // sats
-  description: "Pago de prueba"
-});
+- **Single-file app** — Todo en `index.html`, sin build step necesario
+- **ES Modules** — Imports directos desde CDN (esm.sh)
+- **Zero backend** — Todo corre en el navegador del comerciante
+- **PWA** — Service worker con estrategia network-first + manifest instalable
 
-console.log(invoice.paymentRequest); // bolt11 invoice
+### Dependencias principales:
+| Librería | Uso |
+|----------|-----|
+| `@getalby/lightning-tools` | Resolver Lightning Address, generar invoices |
+| `qrcode` | Generación de QR en canvas |
+| [Yadio.io API](https://yadio.io) | Conversión fiat/BTC en tiempo real |
 
-// Pagar invoice
-const response = await client.payInvoice({
-  invoice: "lnbc..."
-});
+### Estructura:
+```
+RelamPago/
+├── index.html        # App completa (HTML + CSS + JS)
+├── manifest.json     # PWA manifest
+├── sw.js             # Service worker (network-first cache)
+├── vite.config.js    # Config del dev server
+└── package.json      # Dependencias
 ```
 
-## 💸 Lightning Address
+---
 
-Enviar pagos a Lightning Addresses (user@domain.com):
+## 🔧 Stack técnico
 
-```javascript
-import { LightningAddress } from "@getalby/lightning-tools";
+- **Lightning Address** via LNURL-pay para generar invoices
+- **Verificación de pagos** polling al endpoint `/verify/{paymentHash}` del proveedor LNURL
+- **Conversión fiat** en tiempo real usando la API de Yadio.io
+- **Web Audio API** para sonido de confirmación de pago
+- **Web Share API** para compartir QR y página de cobro
+- **localStorage** para persistencia de perfil e historial
 
-// Resolver Lightning Address
-const ln = new LightningAddress("claudio@lacrypta.ar");
-await ln.fetch();
+---
 
-// Generar invoice de 1000 sats
-const invoice = await ln.requestInvoice({ satoshi: 1000 });
-console.log(invoice.paymentRequest);
+## 🌎 Pensado para LATAM
 
-// Info del destinatario
-console.log(ln.lnurlpData);
-```
+- Monedas locales como primera opción (fiat-first, no sats-first)
+- Lenguaje simple en español, sin jerga de Bitcoin
+- Guías paso a paso para usuarios que nunca usaron Lightning
+- Links a wallets gratuitas disponibles en la región
+- Montos rápidos adaptados a cada moneda
 
-## 🔗 LNURL-pay
+---
 
-Pagar usando LNURL:
+## 🏆 Hackathon FOUNDATIONS — Marzo 2026
 
-```javascript
-import { requestInvoice } from "@getalby/lightning-tools";
-
-// Desde LNURL
-const invoice = await requestInvoice({
-  lnUrlOrAddress: "lnurl1dp68gurn8ghj7...",
-  tokens: 1000 // sats
-});
-
-// Desde Lightning Address
-const invoice2 = await requestInvoice({
-  lnUrlOrAddress: "user@getalby.com",
-  tokens: 500
-});
-```
-
-## 🌐 WebLN (Browser)
-
-Para apps en el navegador con extensión de wallet:
-
-```javascript
-import { requestProvider } from "webln";
-
-// Conectar con wallet del navegador (Alby, etc)
-const webln = await requestProvider();
-
-// Enviar pago
-await webln.sendPayment("lnbc...");
-
-// Crear invoice
-const invoice = await webln.makeInvoice({
-  amount: 1000,
-  defaultMemo: "Pago desde mi app"
-});
-```
-
-## 📁 Estructura del proyecto
-
-```
-lightning-starter/
-├── src/
-│   ├── examples/           # Ejemplos para correr con Node
-│   │   ├── create-invoice.js
-│   │   ├── pay-invoice.js
-│   │   ├── nwc-connect.js
-│   │   └── lnurl-pay.js
-│   ├── main.js             # Entry point del frontend
-│   └── lib/                # Utilidades reutilizables
-├── public/
-│   └── index.html          # Frontend de demo
-├── package.json
-└── README.md
-```
-
-## 🏃 Ejecutar ejemplos
-
-```bash
-# Crear invoice con NWC
-npm run example:invoice
-
-# Pagar invoice
-npm run example:pay
-
-# Conectar wallet NWC
-npm run example:nwc
-
-# Pagar Lightning Address
-npm run example:lnurl
-```
-
-> ⚠️ Para los ejemplos que usan NWC, necesitás configurar tu connection string en `.env`
-
-## ⚙️ Configuración
-
-Crear archivo `.env`:
-
-```env
-# Tu Nostr Wallet Connect URL (desde Alby u otra wallet)
-NWC_URL=nostr+walletconnect://...
-
-# Opcional: tu Lightning Address para testing
-LIGHTNING_ADDRESS=tu@email.com
-```
-
-## 📚 Recursos
-
-- [Lightning Network Docs](https://lightning.network/)
-- [Alby Developer Portal](https://guides.getalby.com/developer-guide)
-- [LNURL Specs](https://github.com/lnurl/luds)
-- [NWC Spec (NIP-47)](https://github.com/nostr-protocol/nips/blob/master/47.md)
-- [WebLN Docs](https://webln.dev)
-
-## 🎯 Ideas para la hackathon
-
-- **POS simple**: Terminal de punto de venta
-- **Tipping widget**: Botón de propinas para sitios web
-- **Pay-per-content**: Paywall para artículos/videos
-- **Split payments**: Dividir pagos entre múltiples wallets
-- **Subscriptions**: Pagos recurrentes con NWC
-- **Social payments**: Integrar zaps en tu app
-
-## 🏆 Hackathon FOUNDATIONS - Marzo 2026
-
-Este starter es para la primera hackathon del programa:
-
-- **Fechas**: 3-31 de Marzo 2026
+- **Programa**: Lightning Hackathons de La Crypta
 - **Tema**: Lightning Payments Basics
 - **Premio**: 1,000,000 sats
 - **Info**: [hackaton.lacrypta.ar](https://hackaton.lacrypta.ar)
 
-## 🤝 Contribuir
+---
 
-1. Fork este repo
-2. Creá tu feature branch (`git checkout -b mi-feature`)
-3. Commit tus cambios (`git commit -m 'Agregar feature'`)
-4. Push a la branch (`git push origin mi-feature`)
-5. Abrí un Pull Request
+## 📚 Recursos
+
+- [Lightning Network](https://lightning.network/)
+- [LNURL Specs](https://github.com/lnurl/luds)
+- [Alby Lightning Tools](https://github.com/getAlby/lightning-tools)
+- [Veintiuno - Comunidad Bitcoin LATAM](https://veintiuno.lat/)
 
 ---
 
-Hecho con ⚡ por [La Crypta](https://lacrypta.ar)
+Hecho con ⚡ para la comunidad Lightning de Latinoamérica.
