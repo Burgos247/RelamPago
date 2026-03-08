@@ -3,302 +3,2070 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>⚡ Lightning Starter Kit</title>
+  <title>⚡ RelamPago — Cobrá con Lightning</title>
+  <meta name="description" content="Cobrá con Lightning Network. Generá tu QR y empezá a recibir pagos al instante.">
+  <meta name="theme-color" content="#0a0f1a">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0f1a;
+      --card: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.1);
+      --green: #00ff9d;
+      --yellow: #ffc800;
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.5);
+      --error: #ff6b6b;
+    }
+
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: linear-gradient(180deg, #0a0f1a 0%, #1a1a2e 100%);
+      background: var(--bg);
       min-height: 100vh;
-      color: #fff;
-      padding: 40px 20px;
+      color: var(--text);
     }
-    .container { max-width: 800px; margin: 0 auto; }
-    h1 { 
-      font-size: 2.5rem; 
-      margin-bottom: 10px;
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── Setup ── */
+    .setup-container {
+      min-height: 100vh;
       display: flex;
       align-items: center;
-      gap: 15px;
+      justify-content: center;
+      padding: 20px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(0,255,157,0.07) 0%, transparent 60%);
     }
-    h1 span { color: #ffc800; }
-    .subtitle { color: rgba(255,255,255,0.6); margin-bottom: 40px; }
-    
-    .card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      padding: 30px;
-      margin-bottom: 20px;
-    }
-    .card h2 {
-      font-size: 1.3rem;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .card p { color: rgba(255,255,255,0.7); margin-bottom: 20px; line-height: 1.6; }
-    
-    input, textarea {
+
+    .setup-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
       width: 100%;
-      padding: 12px 16px;
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.05);
-      color: #fff;
+      max-width: 460px;
+    }
+
+    .logo {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: var(--yellow); }
+
+    .tagline {
+      color: var(--muted);
+      margin-bottom: 36px;
       font-size: 1rem;
-      margin-bottom: 15px;
     }
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: #00ff9d;
-    }
-    input::placeholder { color: rgba(255,255,255,0.4); }
-    
-    button {
-      padding: 12px 24px;
-      background: linear-gradient(135deg, #00ff9d 0%, #00cc7d 100%);
-      color: #000;
+
+    label {
+      display: block;
+      font-size: 0.8rem;
       font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="number"] {
+      width: 100%;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
       font-size: 1rem;
-      transition: transform 0.2s;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
     }
-    button:hover { transform: scale(1.02); }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
+    input:focus {
+      outline: none;
+      border-color: var(--green);
+      background: rgba(0,255,157,0.04);
     }
-    
-    .output {
-      background: rgba(0,0,0,0.3);
-      border-radius: 8px;
+    input::placeholder { color: rgba(255,255,255,0.25); }
+
+    .btn-primary {
+      width: 100%;
       padding: 15px;
-      margin-top: 15px;
-      font-family: monospace;
+      background: linear-gradient(135deg, #00ff9d, #00cc7d);
+      color: #000;
+      font-weight: 700;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .error-msg {
+      background: rgba(255,107,107,0.1);
+      border: 1px solid rgba(255,107,107,0.3);
+      color: var(--error);
+      border-radius: 8px;
+      padding: 12px 16px;
       font-size: 0.9rem;
-      word-break: break-all;
+      margin-top: 14px;
       display: none;
     }
-    .output.show { display: block; }
-    .output.success { border-left: 3px solid #00ff9d; }
-    .output.error { border-left: 3px solid #ff6b6b; }
-    
-    .status {
-      padding: 8px 16px;
-      border-radius: 20px;
+    .error-msg.show { display: block; }
+
+    /* ── Address Validation ── */
+    .address-input-wrapper { position: relative; }
+    .address-input-wrapper input { padding-right: 44px; }
+    .address-status {
+      position: absolute;
+      right: 14px;
+      top: 15px;
+      font-size: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .address-status.show { opacity: 1; }
+    .address-status.checking { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Dashboard ── */
+    .dashboard {
+      max-width: 580px;
+      margin: 0 auto;
+      padding: 36px 20px 60px;
+    }
+
+    .dash-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      gap: 16px;
+    }
+
+    .business-name {
+      font-size: 1.7rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .business-name small {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-back {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
       font-size: 0.85rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 15px;
+      white-space: nowrap;
+      transition: all 0.2s;
+      flex-shrink: 0;
     }
-    .status.connected { background: rgba(0,255,157,0.15); color: #00ff9d; }
-    .status.disconnected { background: rgba(255,107,107,0.15); color: #ff6b6b; }
-    
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
-    
-    .footer {
-      margin-top: 60px;
+    .btn-back:hover { border-color: var(--text); color: var(--text); }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 6px;
+      border: none;
+      border-radius: 8px;
+      background: none;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: rgba(255,255,255,0.1);
+      color: var(--text);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── QR Card ── */
+    .qr-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
       text-align: center;
-      color: rgba(255,255,255,0.4);
-      font-size: 0.9rem;
     }
-    .footer a { color: #ffc800; text-decoration: none; }
+
+    .qr-wrapper {
+      background: #fff;
+      border-radius: 16px;
+      padding: 18px;
+      display: inline-block;
+      margin-bottom: 22px;
+      box-shadow: 0 0 40px rgba(0,255,157,0.15);
+    }
+
+    #qr-canvas { display: block; }
+
+    .address-badge {
+      background: rgba(255,200,0,0.08);
+      border: 1px solid rgba(255,200,0,0.25);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-family: monospace;
+      font-size: 0.95rem;
+      color: var(--yellow);
+      margin-bottom: 20px;
+      word-break: break-all;
+    }
+
+    .qr-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 11px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.14); }
+
+    .qr-hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+
+    /* ── Fixed Amount QR ── */
+    .fixed-amount-section {
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+    .fixed-amount-section summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.85rem;
+      list-style: none;
+      transition: color 0.2s;
+    }
+    .fixed-amount-section summary::-webkit-details-marker { display: none; }
+    .fixed-amount-section summary:hover { color: var(--text); }
+    .fixed-amount-content {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .fixed-amount-content input {
+      flex: 1;
+      margin-bottom: 0;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+    }
+    .fixed-amount-content .btn-secondary {
+      flex: 0;
+      white-space: nowrap;
+      padding: 10px 16px;
+    }
+    .fixed-badge {
+      display: none;
+      background: rgba(0,255,157,0.1);
+      border: 1px solid rgba(0,255,157,0.25);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+    .fixed-badge.show { display: block; }
+
+    /* ── Share Link ── */
+    .share-section {
+      margin-top: 14px;
+    }
+
+    /* ── Invoice Tab ── */
+    .invoice-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    .invoice-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 6px;
+    }
+    .invoice-card > p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .amount-input-wrapper {
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .amount-input-wrapper input {
+      padding-right: 56px;
+      margin-bottom: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .amount-unit {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+
+    .quick-amounts {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .quick-btn {
+      padding: 5px 13px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: all 0.2s;
+    }
+    .quick-btn:hover {
+      background: rgba(0,255,157,0.1);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .invoice-result {
+      margin-top: 24px;
+      text-align: center;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .invoice-result.show { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .invoice-qr-wrapper {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+
+    .bolt11-string {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: monospace;
+      font-size: 0.68rem;
+      word-break: break-all;
+      color: var(--muted);
+      text-align: left;
+      margin-bottom: 12px;
+      max-height: 80px;
+      overflow: hidden;
+    }
+
+    /* ── Currency Controls ── */
+    .mode-toggle {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 16px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 7px 12px;
+      border: none;
+      border-radius: 7px;
+      background: none;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-btn.active {
+      background: rgba(255,255,255,0.12);
+      color: var(--text);
+    }
+
+    .currency-row {
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .currency-row label { margin-bottom: 0; flex-shrink: 0; }
+
+    .currency-select {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.9rem;
+      padding: 7px 10px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .currency-select:focus { outline: none; border-color: var(--yellow); }
+    .currency-select option { background: #1a1a2e; }
+
+    .conversion-display {
+      background: rgba(255,200,0,0.07);
+      border: 1px solid rgba(255,200,0,0.2);
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--yellow);
+      margin-bottom: 6px;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+    }
+    .conversion-display.loading { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
+    .conversion-display.error  { color: var(--error); background: rgba(255,107,107,0.06); border-color: rgba(255,107,107,0.2); }
+
+    .rate-badge {
+      font-size: 0.73rem;
+      color: rgba(255,255,255,0.25);
+      text-align: right;
+      margin-bottom: 14px;
+    }
+
+    /* ── Invoice Timer ── */
+    .invoice-timer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 0 2px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      transition: color 0.3s;
+    }
+    .invoice-timer.warning { color: var(--error); }
+    .invoice-timer.expired { color: var(--error); font-weight: 600; }
+    #timer-display { font-family: monospace; font-weight: 700; font-size: 1rem; }
+
+    .invoice-expired-overlay {
+      display: none;
+      background: rgba(255,107,107,0.1);
+      border: 1px solid rgba(255,107,107,0.3);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      color: var(--error);
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+    .invoice-expired-overlay.show { display: block; }
+
+    .canvas-expired { filter: blur(5px); opacity: 0.4; transition: filter 0.4s, opacity 0.4s; }
+
+    /* ── Confirm Payment Button ── */
+    .btn-confirm-payment {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #00ff9d, #00cc7d);
+      color: #000;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: opacity 0.2s, transform 0.1s;
+      animation: pulse-green 2s infinite;
+    }
+    .btn-confirm-payment:hover { opacity: 0.9; }
+    .btn-confirm-payment:active { transform: scale(0.98); }
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0.4); }
+      50% { box-shadow: 0 0 0 10px rgba(0,255,157,0); }
+    }
+
+    .polling-status {
+      font-size: 0.85rem;
+      color: var(--green);
+      text-align: center;
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(0,255,157,0.06);
+      border: 1px solid rgba(0,255,157,0.15);
+      border-radius: 10px;
+      display: none;
+    }
+    .polling-status.show { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .polling-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.2s infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
+    .invoice-qr-wrapper.waiting {
+      animation: qr-pulse 2s ease-in-out infinite;
+    }
+    @keyframes qr-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,157,0.3); }
+      50% { box-shadow: 0 0 0 12px rgba(0,255,157,0); }
+    }
+    .no-verify-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 6px;
+      display: none;
+    }
+    .no-verify-hint.show { display: block; }
+
+    /* ── Helper Text / Novice UX ── */
+    .helper-text {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: -14px;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    .helper-text a {
+      color: var(--green);
+      text-decoration: none;
+    }
+    .helper-text a:hover { text-decoration: underline; }
+
+    .help-banner {
+      background: rgba(255,200,0,0.06);
+      border: 1px solid rgba(255,200,0,0.15);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 24px;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.7);
+    }
+    .help-banner strong { color: var(--yellow); }
+
+    .step-label {
+      display: inline-block;
+      background: var(--green);
+      color: #000;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+    }
+
+    .bolt11-toggle {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.75rem;
+      cursor: pointer;
+      padding: 4px 0;
+      margin-bottom: 8px;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+    .bolt11-toggle:hover { color: var(--text); }
+    .bolt11-string.hidden { display: none; }
+
+    .invoice-amount-badge {
+      background: rgba(0,255,157,0.1);
+      border: 1px solid rgba(0,255,157,0.2);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--green);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .how-it-works {
+      margin-top: 12px;
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+    }
+    .how-it-works summary {
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: var(--muted);
+      list-style: none;
+    }
+    .how-it-works summary::-webkit-details-marker { display: none; }
+    .how-it-works summary:hover { color: var(--text); }
+    .how-it-works .steps {
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.8;
+    }
+    .how-it-works .steps span {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    /* ── Payment Success Overlay ── */
+    .payment-success-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      animation: fadeIn 0.3s ease;
+    }
+    .payment-success-overlay.show { display: flex; }
+
+    .success-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00ff9d, #00cc7d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      margin-bottom: 24px;
+      animation: success-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes success-pop {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+
+    .success-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--green);
+    }
+
+    .success-amount {
+      font-size: 1.3rem;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .success-concept {
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    .success-dismiss {
+      padding: 14px 40px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .success-dismiss:hover { background: rgba(255,255,255,0.18); }
+
+    /* ── Confetti ── */
+    .confetti-piece {
+      position: fixed;
+      z-index: 10001;
+      pointer-events: none;
+      animation: confetti-fall linear forwards;
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* ── History Tab ── */
+    .history-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    .history-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 18px;
+    }
+
+    .history-empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 40px 20px;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .history-group-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      margin-top: 16px;
+    }
+    .history-group-label:first-child { margin-top: 0; }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      transition: background 0.2s;
+    }
+    .history-item:hover { background: rgba(255,255,255,0.06); }
+
+    .history-status {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .history-info { flex: 1; min-width: 0; }
+    .history-info .amount {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+    .history-info .concept {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-time {
+      font-size: 0.78rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .history-summary {
+      display: flex;
+      gap: 16px;
+      padding: 14px;
+      background: rgba(0,255,157,0.06);
+      border: 1px solid rgba(0,255,157,0.15);
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    .history-summary-item {
+      flex: 1;
+      text-align: center;
+    }
+    .history-summary-item .value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--green);
+    }
+    .history-summary-item .label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 2px;
+    }
+
+    .btn-clear-history {
+      width: 100%;
+      padding: 10px;
+      background: none;
+      border: 1px solid rgba(255,107,107,0.2);
+      color: rgba(255,107,107,0.6);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      margin-top: 16px;
+      transition: all 0.2s;
+    }
+    .btn-clear-history:hover {
+      background: rgba(255,107,107,0.08);
+      border-color: var(--error);
+      color: var(--error);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      padding: 40px 0 0;
+      color: rgba(255,255,255,0.25);
+      font-size: 0.82rem;
+    }
+    .footer a { color: var(--yellow); text-decoration: none; }
+
+    /* ── PWA Install Banner ── */
+    .pwa-install-banner {
+      display: none;
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      max-width: 460px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 18px;
+      z-index: 9999;
+      gap: 12px;
+      align-items: center;
+    }
+    .pwa-install-banner.show { display: flex; }
+    .pwa-install-text { flex: 1; font-size: 0.85rem; }
+    .pwa-install-text strong { color: var(--green); }
+    .pwa-install-btn {
+      padding: 8px 18px;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .pwa-install-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    @media (max-width: 500px) {
+      .setup-card { padding: 32px 20px; }
+      .qr-actions { flex-direction: column; }
+      .qr-card { padding: 24px 16px; }
+      .invoice-card { padding: 24px 16px; }
+      .history-card { padding: 24px 16px; }
+      .tab { font-size: 0.75rem; padding: 9px 4px; }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>⚡ <span>Lightning</span> Starter Kit</h1>
-    <p class="subtitle">Demo interactivo para Lightning Hackathons 2026</p>
 
-    <!-- WebLN Connection -->
-    <div class="card">
-      <h2>🔌 Conectar Wallet (WebLN)</h2>
-      <p>Conectá tu wallet del navegador (Alby, etc.) para interactuar con Lightning.</p>
-      
-      <div id="walletStatus" class="status disconnected">
-        ⚪ No conectado
+  <!-- ── Setup Screen ── -->
+  <div id="screen-setup" class="screen active">
+    <div class="setup-container">
+      <div class="setup-card">
+        <div class="logo">⚡ <span>RelámPago</span></div>
+        <p class="tagline">Recibí pagos al instante con Bitcoin Lightning</p>
+
+        <div class="help-banner">
+          <strong>¿Primera vez?</strong> En 2 pasos vas a tener tu propio QR para cobrar. Solo necesitás una <strong>Lightning Address</strong> (es gratis, como un email para recibir pagos).
+        </div>
+
+        <span class="step-label">PASO 1</span>
+        <label for="input-name">Nombre de tu negocio o emprendimiento</label>
+        <input type="text" id="input-name" placeholder="Ej: La Pizzería de Juan" autocomplete="off">
+
+        <span class="step-label">PASO 2</span>
+        <label for="input-address">Tu Lightning Address</label>
+        <div class="address-input-wrapper">
+          <input type="email" id="input-address" placeholder="tunegocio@getalby.com" autocomplete="off">
+          <span class="address-status" id="address-status"></span>
+        </div>
+        <p class="helper-text">
+          Es como un email pero para recibir pagos. Creá la tuya gratis en
+          <a href="https://getalby.com" target="_blank">Alby</a>,
+          <a href="https://blink.sv" target="_blank">Blink</a> o
+          <a href="https://primal.net" target="_blank">Primal</a>.
+        </p>
+
+        <div id="welcome-back" style="display:none; margin-bottom:16px; padding:12px 16px; background:rgba(0,255,157,0.07); border:1px solid rgba(0,255,157,0.2); border-radius:12px; font-size:0.88rem; color:rgba(255,255,255,0.7);">
+          <span id="welcome-name"></span> · <button onclick="autoRestoreProfile()" style="background:none;border:none;color:var(--green);cursor:pointer;font-weight:600;font-size:0.88rem;">Continuar →</button>
+        </div>
+
+        <button class="btn-primary" id="btn-generate" onclick="generateProfile()">
+          Generar mi perfil de cobro ⚡
+        </button>
+
+        <div class="error-msg" id="error-msg"></div>
       </div>
-      
-      <button id="connectBtn" onclick="connectWallet()">Conectar Wallet</button>
-      <div id="walletOutput" class="output"></div>
     </div>
+  </div>
 
-    <div class="grid">
-      <!-- Lightning Address -->
-      <div class="card">
-        <h2>📬 Lightning Address</h2>
-        <p>Resolvé una Lightning Address y generá un invoice.</p>
-        
-        <input type="text" id="lnAddress" placeholder="usuario@dominio.com" value="hello@getalby.com">
-        <input type="number" id="lnAmount" placeholder="Cantidad en sats" value="21">
-        <button onclick="resolveLightningAddress()">Generar Invoice</button>
-        <div id="lnAddressOutput" class="output"></div>
+  <!-- ── Dashboard Screen ── -->
+  <div id="screen-dashboard" class="screen">
+    <div class="dashboard">
+
+      <div class="dash-header">
+        <div class="business-name">
+          <small>Panel de cobro</small>
+          <span id="dash-name"></span>
+        </div>
+        <button class="btn-back" onclick="goBack()">← Editar</button>
       </div>
 
-      <!-- Create Invoice -->
-      <div class="card">
-        <h2>📝 Crear Invoice</h2>
-        <p>Generá un invoice para recibir pagos.</p>
-        
-        <input type="number" id="invoiceAmount" placeholder="Cantidad en sats" value="100">
-        <input type="text" id="invoiceMemo" placeholder="Descripción" value="Test desde Lightning Starter">
-        <button id="createInvoiceBtn" onclick="createInvoice()" disabled>Crear Invoice</button>
-        <div id="invoiceOutput" class="output"></div>
+      <div class="tabs">
+        <button class="tab active" id="tab-btn-qr" onclick="switchTab('qr')">📱 Mi QR</button>
+        <button class="tab" id="tab-btn-invoice" onclick="switchTab('invoice')">💰 Cobrar</button>
+        <button class="tab" id="tab-btn-history" onclick="switchTab('history')">📊 Historial</button>
+      </div>
+
+      <!-- Tab: QR permanente -->
+      <div class="tab-content active" id="tab-qr">
+        <div class="qr-card">
+          <div class="fixed-badge" id="fixed-badge"></div>
+
+          <div class="qr-wrapper">
+            <canvas id="qr-canvas"></canvas>
+          </div>
+
+          <div class="address-badge" id="dash-address"></div>
+
+          <div class="qr-actions">
+            <button class="btn-secondary" onclick="downloadQR()">⬇ Descargar QR</button>
+            <button class="btn-secondary" id="btn-copy" onclick="copyAddress()">📋 Copiar dirección</button>
+            <button class="btn-secondary" id="btn-invert" onclick="toggleQRInvert()" style="flex:1 1 100%;">🖨️ Invertir para imprimir</button>
+          </div>
+
+          <p class="qr-hint">
+            Imprimí este QR y ponelo en tu local o negocio.<br>
+            Tu cliente lo escanea con su app de Bitcoin y te paga al instante.
+          </p>
+
+          <details class="how-it-works">
+            <summary>❓ ¿Cómo funciona?</summary>
+            <div class="steps">
+              <span>1.</span> Imprimí o mostrá el QR en tu negocio<br>
+              <span>2.</span> Tu cliente lo escanea con cualquier wallet Bitcoin/Lightning<br>
+              <span>3.</span> El pago llega a tu cuenta en segundos<br>
+              <span>4.</span> Listo, sin intermediarios ni comisiones altas
+            </div>
+          </details>
+
+          <!-- Fixed Amount QR -->
+          <details class="fixed-amount-section">
+            <summary>💡 ¿Precio fijo? Agregá un monto sugerido</summary>
+            <div class="fixed-amount-content">
+              <input type="number" id="fixed-amount-input" placeholder="1000" min="1">
+              <button class="btn-secondary" onclick="generateFixedQR()">⚡ Fijar</button>
+              <button class="btn-secondary" onclick="clearFixedQR()" style="display:none" id="btn-clear-fixed">✕</button>
+            </div>
+          </details>
+
+          <!-- Share Link -->
+          <div class="share-section">
+            <button class="btn-secondary" onclick="sharePaymentPage()" style="width:100%;margin-top:10px;">🔗 Compartir mi página de cobro</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Cobrar monto específico -->
+      <div class="tab-content" id="tab-invoice">
+        <div class="invoice-card">
+          <h3>💰 Cobrar un monto</h3>
+          <p>Ingresá cuánto querés cobrar y mostrá el QR a tu cliente.</p>
+
+          <!-- Toggle Fiat / Sats (fiat first for novices) -->
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="mode-btn-fiat" onclick="setMode('fiat')">💵 Pesos / Moneda</button>
+            <button class="mode-btn" id="mode-btn-sats" onclick="setMode('sats')">⚡ Sats</button>
+          </div>
+
+          <!-- Currency selector (visible en modo fiat) -->
+          <div id="currency-row" class="currency-row" style="display:none">
+            <label>Moneda</label>
+            <select class="currency-select" id="currency-select" onchange="onCurrencyChange()">
+              <option value="ARS">🇦🇷 ARS — Peso argentino</option>
+              <option value="USD">🇺🇸 USD — Dólar</option>
+              <option value="EUR">🇪🇺 EUR — Euro</option>
+              <option value="MXN">🇲🇽 MXN — Peso mexicano</option>
+              <option value="COP">🇨🇴 COP — Peso colombiano</option>
+              <option value="BRL">🇧🇷 BRL — Real brasileño</option>
+              <option value="CLP">🇨🇱 CLP — Peso chileno</option>
+              <option value="PEN">🇵🇪 PEN — Sol peruano</option>
+              <option value="UYU">🇺🇾 UYU — Peso uruguayo</option>
+            </select>
+          </div>
+
+          <label for="input-amount">¿Cuánto querés cobrar?</label>
+          <div class="amount-input-wrapper">
+            <input type="number" id="input-amount" placeholder="1000" min="1" oninput="onAmountInput()">
+            <span class="amount-unit" id="amount-unit">sats</span>
+          </div>
+
+          <div class="conversion-display loading" id="conversion-display">Ingresá un monto para ver la conversión</div>
+          <div class="rate-badge" id="rate-badge"></div>
+
+          <div class="quick-amounts" id="quick-amounts"></div>
+
+          <label for="input-concept">¿Por qué cobrás? <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+          <input type="text" id="input-concept" placeholder="Ej: 2 empanadas, corte de pelo...">
+
+          <button class="btn-primary" id="btn-invoice" onclick="generateInvoice()">
+            Crear QR para cobrar ⚡
+          </button>
+
+          <div class="invoice-result" id="invoice-result">
+            <div class="invoice-amount-badge" id="invoice-amount-badge"></div>
+
+            <div class="invoice-timer" id="invoice-timer">
+              <span id="timer-display">⏱ 10:00</span>
+              <span>para que tu cliente pague</span>
+            </div>
+
+            <div class="invoice-expired-overlay" id="invoice-expired">
+              ⚠️ Este cobro expiró. Creá uno nuevo.
+            </div>
+
+            <div class="invoice-qr-wrapper">
+              <canvas id="invoice-canvas"></canvas>
+            </div>
+            <p style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Tu cliente escanea este QR con su wallet para pagarte</p>
+            <button class="bolt11-toggle" id="bolt11-toggle" onclick="toggleBolt11()">Ver código técnico</button>
+            <div class="bolt11-string hidden" id="bolt11-display"></div>
+            <div class="qr-actions">
+              <button class="btn-secondary" onclick="downloadInvoiceQR()">⬇ Descargar</button>
+              <button class="btn-secondary" id="btn-copy-bolt11" onclick="copyBolt11()">📋 Copiar</button>
+              <button class="btn-secondary" id="btn-share" onclick="shareInvoice()">🔗 Compartir</button>
+            </div>
+
+            <!-- Payment Status -->
+            <div class="polling-status" id="polling-status">
+              <span class="polling-dot"></span> Esperando pago... se detectará automáticamente
+            </div>
+            <div class="no-verify-hint" id="no-verify-hint">
+              ⚠️ Tu proveedor no soporta verificación automática.
+            </div>
+
+            <!-- Confirm Payment (manual fallback) -->
+            <button class="btn-confirm-payment" id="btn-confirm-payment" onclick="confirmPayment()">
+              ✅ Confirmar pago recibido
+            </button>
+
+            <button class="btn-secondary" onclick="resetInvoice()" style="width:100%;margin-top:10px;">🔄 Nuevo cobro</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Historial -->
+      <div class="tab-content" id="tab-history">
+        <div class="history-card">
+          <h3>📊 Historial de cobros</h3>
+          <div id="history-summary"></div>
+          <div id="history-list"></div>
+          <button class="btn-clear-history" id="btn-clear-history" onclick="clearHistory()" style="display:none">
+            🗑 Vaciar historial
+          </button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <a href="https://hackaton.lacrypta.ar" target="_blank">Lightning Hackathons 2026</a> ·
+        <a href="https://lacrypta.ar" target="_blank">La Crypta</a>
       </div>
     </div>
+  </div>
 
-    <!-- Pay Invoice -->
-    <div class="card">
-      <h2>💸 Pagar Invoice</h2>
-      <p>Pagá un invoice bolt11.</p>
-      
-      <textarea id="payInvoice" rows="3" placeholder="lnbc..."></textarea>
-      <button id="payBtn" onclick="payInvoice()" disabled>Pagar</button>
-      <div id="payOutput" class="output"></div>
-    </div>
+  <!-- ── Payment Success Overlay ── -->
+  <div class="payment-success-overlay" id="payment-success">
+    <div class="success-icon">✓</div>
+    <div class="success-title">¡Pago recibido!</div>
+    <div class="success-amount" id="success-amount"></div>
+    <div class="success-concept" id="success-concept"></div>
+    <button class="success-dismiss" onclick="dismissSuccess()">Listo</button>
+  </div>
 
-    <div class="footer">
-      <p>
-        <a href="https://hackaton.lacrypta.ar" target="_blank">Lightning Hackathons 2026</a> · 
-        <a href="https://lacrypta.ar" target="_blank">La Crypta</a> · 
-        <a href="https://github.com/lacrypta/lightning-starter" target="_blank">GitHub</a>
-      </p>
+  <!-- ── PWA Install Banner ── -->
+  <div class="pwa-install-banner" id="pwa-banner">
+    <div class="pwa-install-text">
+      <strong>Instalá RelamPago</strong> en tu pantalla de inicio
     </div>
+    <button class="pwa-install-btn" id="pwa-install-btn">Instalar</button>
+    <button class="pwa-install-close" onclick="dismissPWA()">×</button>
   </div>
 
   <script type="module">
     import { LightningAddress } from "https://esm.sh/@getalby/lightning-tools@5";
-    
-    window.webln = null;
+    import QRCode from "https://esm.sh/qrcode@1.5.4";
 
-    // Conectar wallet
-    window.connectWallet = async function() {
-      const status = document.getElementById("walletStatus");
-      const output = document.getElementById("walletOutput");
-      const btn = document.getElementById("connectBtn");
-      
-      try {
-        btn.disabled = true;
-        btn.textContent = "Conectando...";
-        
-        if (typeof window.webln === "undefined" || !window.webln) {
-          // Intentar detectar provider
-          if (window.nostr) {
-            output.textContent = "⚠️ Detecté Nostr pero no WebLN. Instalá Alby para pagos Lightning.";
-            output.className = "output show error";
-            return;
-          }
-          throw new Error("No se detectó wallet. Instalá Alby u otra extensión WebLN.");
-        }
+    // ══════════════════════════════════════════════════════
+    //  STATE (all declarations first to avoid TDZ)
+    // ══════════════════════════════════════════════════════
 
-        await window.webln.enable();
-        const info = await window.webln.getInfo();
-        
-        status.className = "status connected";
-        status.innerHTML = `🟢 Conectado: ${info.node?.alias || "Wallet"}`;
-        
-        output.textContent = JSON.stringify(info, null, 2);
-        output.className = "output show success";
-        
-        // Habilitar botones
-        document.getElementById("createInvoiceBtn").disabled = false;
-        document.getElementById("payBtn").disabled = false;
-        
-        btn.textContent = "✓ Conectado";
-        
-      } catch (err) {
-        output.textContent = "❌ " + err.message;
-        output.className = "output show error";
-        btn.disabled = false;
-        btn.textContent = "Conectar Wallet";
-      }
+    let currentLnAddress    = '';
+    let currentBusinessName = '';
+    let currentBolt11       = '';
+    let currentMode         = 'fiat';
+    let currentCurrency     = 'ARS';
+    let btcRates            = {};
+    let qrInverted          = false;
+    let invoiceTimerInterval  = null;
+    let paymentPollInterval   = null;
+    let lastInvoiceSats       = 0;
+    let lastInvoiceFiatAmount = 0;
+    let lastInvoiceFiatCurrency = '';
+    let lastInvoiceConcept    = '';
+    let addressValidationTimer = null;
+    let fixedAmountActive     = false;
+    let deferredPWAPrompt     = null;
+
+    const QUICK_SATS = [100, 500, 1000, 5000, 10000, 21000];
+    const QUICK_FIAT = {
+      ARS: [500, 1000, 2000, 5000, 10000, 20000],
+      USD: [1, 5, 10, 25, 50, 100],
+      EUR: [1, 5, 10, 25, 50, 100],
+      MXN: [50, 100, 200, 500, 1000, 2000],
+      COP: [5000, 10000, 20000, 50000, 100000, 200000],
+      BRL: [5, 10, 20, 50, 100, 200],
+      CLP: [500, 1000, 2000, 5000, 10000, 20000],
+      PEN: [5, 10, 20, 50, 100, 200],
+      UYU: [50, 100, 200, 500, 1000, 2000],
     };
 
-    // Resolver Lightning Address
-    window.resolveLightningAddress = async function() {
-      const address = document.getElementById("lnAddress").value;
-      const amount = parseInt(document.getElementById("lnAmount").value) || 21;
-      const output = document.getElementById("lnAddressOutput");
-      
-      try {
-        output.textContent = "Resolviendo...";
-        output.className = "output show";
-        
-        const ln = new LightningAddress(address);
-        await ln.fetch();
-        
-        const invoice = await ln.requestInvoice({ satoshi: amount });
-        
-        output.textContent = `✅ Invoice de ${amount} sats:\n\n${invoice.paymentRequest}`;
-        output.className = "output show success";
-        
-      } catch (err) {
-        output.textContent = "❌ " + err.message;
-        output.className = "output show error";
-      }
-    };
+    // ══════════════════════════════════════════════════════
+    //  SETUP
+    // ══════════════════════════════════════════════════════
 
-    // Crear invoice
-    window.createInvoice = async function() {
-      const amount = parseInt(document.getElementById("invoiceAmount").value);
-      const memo = document.getElementById("invoiceMemo").value;
-      const output = document.getElementById("invoiceOutput");
-      
-      try {
-        output.textContent = "Creando invoice...";
-        output.className = "output show";
-        
-        const invoice = await window.webln.makeInvoice({
-          amount: amount,
-          defaultMemo: memo
-        });
-        
-        output.textContent = `✅ Invoice creado:\n\n${invoice.paymentRequest}`;
-        output.className = "output show success";
-        
-      } catch (err) {
-        output.textContent = "❌ " + err.message;
-        output.className = "output show error";
-      }
-    };
+    window.generateProfile = async function () {
+      const name    = document.getElementById('input-name').value.trim();
+      const address = document.getElementById('input-address').value.trim().toLowerCase();
+      const btn     = document.getElementById('btn-generate');
+      const errorEl = document.getElementById('error-msg');
 
-    // Pagar invoice
-    window.payInvoice = async function() {
-      const invoice = document.getElementById("payInvoice").value.trim();
-      const output = document.getElementById("payOutput");
-      
-      if (!invoice) {
-        output.textContent = "⚠️ Pegá un invoice bolt11";
-        output.className = "output show error";
+      errorEl.classList.remove('show');
+
+      if (!name) { showError('Ingresá el nombre de tu negocio'); return; }
+      if (!address || !address.includes('@')) {
+        showError('Ingresá una Lightning Address válida (usuario@dominio.com)');
         return;
       }
-      
+
+      btn.disabled = true;
+      btn.textContent = '⚡ Validando Lightning Address...';
+
       try {
-        output.textContent = "Enviando pago...";
-        output.className = "output show";
-        
-        const result = await window.webln.sendPayment(invoice);
-        
-        output.textContent = `✅ Pago exitoso!\n\nPreimage: ${result.preimage}`;
-        output.className = "output show success";
-        
+        const ln = new LightningAddress(address);
+        await ln.fetch();
+
+        currentLnAddress = address;
+        currentBusinessName = name;
+        localStorage.setItem('relampago_profile', JSON.stringify({ name, address }));
+
+        await showDashboard(name, address);
+
       } catch (err) {
-        output.textContent = "❌ " + err.message;
-        output.className = "output show error";
+        showError('Lightning Address no encontrada. Verificá que esté activa y sea válida.');
+        btn.disabled = false;
+        btn.textContent = 'Generar mi perfil de cobro ⚡';
       }
     };
 
-    // Auto-detect wallet on load
-    if (window.webln) {
-      document.getElementById("walletStatus").innerHTML = "🟡 Wallet detectada - Click para conectar";
+    function showError(msg) {
+      const el = document.getElementById('error-msg');
+      el.textContent = '⚠️ ' + msg;
+      el.classList.add('show');
     }
+
+    async function showDashboard(name, address) {
+      const canvas = document.getElementById('qr-canvas');
+      await QRCode.toCanvas(canvas, `lightning:${address}`, {
+        width: 260, margin: 1,
+        color: { dark: '#000000', light: '#FFFFFF' }
+      });
+      qrInverted = false;
+      fixedAmountActive = false;
+      document.querySelector('.qr-wrapper').style.background = '#fff';
+      document.getElementById('btn-invert').textContent = '🖨️ Invertir colores para imprimir';
+      document.getElementById('fixed-badge').classList.remove('show');
+      document.getElementById('dash-name').textContent = name;
+      document.getElementById('dash-address').textContent = address;
+      document.getElementById('screen-setup').classList.remove('active');
+      document.getElementById('screen-dashboard').classList.add('active');
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  ADDRESS VALIDATION (real-time, debounced)
+    // ══════════════════════════════════════════════════════
+
+    function onAddressInput() {
+      const val = document.getElementById('input-address').value.trim();
+      const status = document.getElementById('address-status');
+
+      clearTimeout(addressValidationTimer);
+
+      if (!val || !val.includes('@') || val.length < 5) {
+        status.classList.remove('show');
+        return;
+      }
+
+      status.textContent = '⏳';
+      status.className = 'address-status show checking';
+
+      addressValidationTimer = setTimeout(async () => {
+        try {
+          const ln = new LightningAddress(val.toLowerCase());
+          await ln.fetch();
+          status.textContent = '✅';
+          status.className = 'address-status show';
+        } catch {
+          status.textContent = '❌';
+          status.className = 'address-status show';
+        }
+      }, 800);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  LOCALSTORAGE PROFILE
+    // ══════════════════════════════════════════════════════
+
+    window.autoRestoreProfile = async function () {
+      try {
+        const saved = JSON.parse(localStorage.getItem('relampago_profile'));
+        if (!saved?.name || !saved?.address) return;
+        currentLnAddress = saved.address;
+        currentBusinessName = saved.name;
+        await showDashboard(saved.name, saved.address);
+      } catch {}
+    };
+
+    function loadSavedProfile() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('relampago_profile'));
+        if (!saved?.name || !saved?.address) return;
+        document.getElementById('input-name').value = saved.name;
+        document.getElementById('input-address').value = saved.address;
+        const wb = document.getElementById('welcome-back');
+        document.getElementById('welcome-name').textContent = `⚡ ${saved.name}`;
+        wb.style.display = 'block';
+      } catch {}
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  TABS
+    // ══════════════════════════════════════════════════════
+
+    window.switchTab = function (tab) {
+      ['qr', 'invoice', 'history'].forEach(t => {
+        document.getElementById(`tab-btn-${t}`).classList.toggle('active', tab === t);
+        document.getElementById(`tab-${t}`).classList.toggle('active', tab === t);
+      });
+      if (tab === 'invoice' && !Object.keys(btcRates).length) fetchRates();
+      if (tab === 'history') renderHistory();
+    };
+
+    // ══════════════════════════════════════════════════════
+    //  QR PERMANENTE
+    // ══════════════════════════════════════════════════════
+
+    window.downloadQR = function () {
+      const canvas = document.getElementById('qr-canvas');
+      const link = document.createElement('a');
+      link.download = 'relampago-qr.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+
+    window.copyAddress = async function () {
+      await navigator.clipboard.writeText(currentLnAddress);
+      const btn = document.getElementById('btn-copy');
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => { btn.textContent = '📋 Copiar dirección'; }, 2000);
+    };
+
+    window.goBack = function () {
+      document.getElementById('screen-setup').classList.add('active');
+      document.getElementById('screen-dashboard').classList.remove('active');
+      document.getElementById('btn-generate').disabled = false;
+      document.getElementById('btn-generate').textContent = 'Generar mi perfil de cobro ⚡';
+      switchTab('qr');
+    };
+
+    // ── QR Invert ──
+
+    window.toggleQRInvert = async function () {
+      qrInverted = !qrInverted;
+      const wrapper = document.querySelector('.qr-wrapper');
+      const btn     = document.getElementById('btn-invert');
+      const canvas  = document.getElementById('qr-canvas');
+      const content = fixedAmountActive ? currentBolt11.toUpperCase() : `lightning:${currentLnAddress}`;
+
+      if (qrInverted) {
+        wrapper.style.background = '#000';
+        await QRCode.toCanvas(canvas, content, {
+          width: 260, margin: 1,
+          color: { dark: '#FFFFFF', light: '#000000' }
+        });
+        btn.textContent = '☀️ Restaurar colores';
+      } else {
+        wrapper.style.background = '#fff';
+        await QRCode.toCanvas(canvas, content, {
+          width: 260, margin: 1,
+          color: { dark: '#000000', light: '#FFFFFF' }
+        });
+        btn.textContent = '🖨️ Invertir colores para imprimir';
+      }
+    };
+
+    // ── Fixed Amount QR ──
+
+    window.generateFixedQR = async function () {
+      const amountRaw = parseInt(document.getElementById('fixed-amount-input').value);
+      if (!amountRaw || amountRaw < 1) { alert('Ingresá un monto en sats'); return; }
+
+      try {
+        const ln = new LightningAddress(currentLnAddress);
+        await ln.fetch();
+        const invoice = await ln.requestInvoice({ satoshi: amountRaw });
+        currentBolt11 = invoice.paymentRequest;
+        fixedAmountActive = true;
+
+        const canvas = document.getElementById('qr-canvas');
+        const colors = qrInverted
+          ? { dark: '#FFFFFF', light: '#000000' }
+          : { dark: '#000000', light: '#FFFFFF' };
+        await QRCode.toCanvas(canvas, invoice.paymentRequest.toUpperCase(), {
+          width: 260, margin: 1, color: colors
+        });
+
+        const badge = document.getElementById('fixed-badge');
+        badge.textContent = `⚡ Precio fijo: ${amountRaw.toLocaleString('es-AR')} sats`;
+        badge.classList.add('show');
+        document.getElementById('btn-clear-fixed').style.display = '';
+      } catch (err) {
+        alert('Error generando QR fijo: ' + err.message);
+      }
+    };
+
+    window.clearFixedQR = async function () {
+      fixedAmountActive = false;
+      document.getElementById('fixed-badge').classList.remove('show');
+      document.getElementById('btn-clear-fixed').style.display = 'none';
+      document.getElementById('fixed-amount-input').value = '';
+
+      const canvas = document.getElementById('qr-canvas');
+      const colors = qrInverted
+        ? { dark: '#FFFFFF', light: '#000000' }
+        : { dark: '#000000', light: '#FFFFFF' };
+      await QRCode.toCanvas(canvas, `lightning:${currentLnAddress}`, {
+        width: 260, margin: 1, color: colors
+      });
+    };
+
+    // ── Share Payment Page ──
+
+    window.sharePaymentPage = async function () {
+      const url = new URL(window.location.href.split('?')[0]);
+      url.searchParams.set('pay', currentLnAddress);
+      url.searchParams.set('name', currentBusinessName);
+      const shareUrl = url.toString();
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `Pagale a ${currentBusinessName} con Lightning`,
+            text: `Escaneá el QR o usá este link para pagar con Lightning Network`,
+            url: shareUrl,
+          });
+          return;
+        } catch {}
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      const btn = event.target;
+      const orig = btn.textContent;
+      btn.textContent = '✓ Link copiado!';
+      setTimeout(() => { btn.textContent = orig; }, 2500);
+    };
+
+    // ══════════════════════════════════════════════════════
+    //  FIAT / RATES
+    // ══════════════════════════════════════════════════════
+
+    async function fetchRates() {
+      const conv = document.getElementById('conversion-display');
+      conv.className = 'conversion-display loading';
+      conv.textContent = 'Cargando cotización...';
+      try {
+        const res  = await fetch('https://api.yadio.io/exrates/BTC');
+        const data = await res.json();
+        btcRates = data.BTC;
+        updateConversion();
+        renderQuickAmounts();
+        updateRateBadge();
+      } catch {
+        conv.className = 'conversion-display error';
+        conv.textContent = '⚠️ No se pudo cargar la cotización de Yadio.io';
+      }
+    }
+
+    function fiatToSats(amount, currency) {
+      if (!btcRates[currency]) return null;
+      return Math.round((amount / btcRates[currency]) * 100_000_000);
+    }
+
+    function satsToFiat(sats, currency) {
+      if (!btcRates[currency]) return null;
+      return (sats / 100_000_000) * btcRates[currency];
+    }
+
+    function formatFiat(amount, currency) {
+      const noDecimals = ['ARS', 'CLP', 'UYU', 'COP', 'MXN'];
+      return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: noDecimals.includes(currency) ? 0 : 2,
+      }).format(amount);
+    }
+
+    function updateConversion() {
+      const conv   = document.getElementById('conversion-display');
+      const amount = parseFloat(document.getElementById('input-amount').value);
+
+      if (!amount || amount <= 0) {
+        conv.className = 'conversion-display loading';
+        conv.textContent = 'Ingresá un monto para ver la conversión';
+        return;
+      }
+
+      if (currentMode === 'sats') {
+        if (!Object.keys(btcRates).length) { fetchRates(); return; }
+        const fiat = satsToFiat(amount, currentCurrency);
+        conv.className = 'conversion-display';
+        conv.textContent = `≈ ${formatFiat(fiat, currentCurrency)}`;
+      } else {
+        const sats = fiatToSats(amount, currentCurrency);
+        if (sats === null) return;
+        conv.className = 'conversion-display';
+        conv.textContent = `≈ ${sats.toLocaleString('es-AR')} sats`;
+      }
+    }
+
+    function updateRateBadge() {
+      const badge = document.getElementById('rate-badge');
+      if (!btcRates[currentCurrency]) { badge.textContent = ''; return; }
+      badge.textContent = `1 BTC = ${formatFiat(btcRates[currentCurrency], currentCurrency)} · yadio.io`;
+    }
+
+    function renderQuickAmounts() {
+      const container = document.getElementById('quick-amounts');
+      const items = currentMode === 'sats'
+        ? QUICK_SATS
+        : (QUICK_FIAT[currentCurrency] || QUICK_FIAT.USD);
+
+      container.innerHTML = items.map(v => {
+        const label = currentMode === 'sats'
+          ? v.toLocaleString('es-AR')
+          : formatFiat(v, currentCurrency);
+        return `<button class="quick-btn" onclick="setAmount(${v})">${label}</button>`;
+      }).join('');
+    }
+
+    window.setMode = function (mode) {
+      currentMode = mode;
+      document.getElementById('mode-btn-sats').classList.toggle('active', mode === 'sats');
+      document.getElementById('mode-btn-fiat').classList.toggle('active', mode === 'fiat');
+      document.getElementById('currency-row').style.display = mode === 'fiat' ? 'flex' : 'none';
+      document.getElementById('amount-unit').textContent = mode === 'sats' ? 'sats' : currentCurrency;
+      document.getElementById('input-amount').value = '';
+      document.getElementById('invoice-result').classList.remove('show');
+      if (mode === 'fiat' && !Object.keys(btcRates).length) fetchRates();
+      else { updateConversion(); renderQuickAmounts(); updateRateBadge(); }
+    };
+
+    window.onCurrencyChange = function () {
+      currentCurrency = document.getElementById('currency-select').value;
+      document.getElementById('amount-unit').textContent = currentCurrency;
+      document.getElementById('input-amount').value = '';
+      document.getElementById('invoice-result').classList.remove('show');
+      updateConversion();
+      renderQuickAmounts();
+      updateRateBadge();
+    };
+
+    window.onAmountInput = function () { updateConversion(); };
+
+    window.setAmount = function (amount) {
+      document.getElementById('input-amount').value = amount;
+      updateConversion();
+    };
+
+    // ══════════════════════════════════════════════════════
+    //  INVOICE GENERATION
+    // ══════════════════════════════════════════════════════
+
+    window.generateInvoice = async function () {
+      const raw  = parseFloat(document.getElementById('input-amount').value);
+      const btn  = document.getElementById('btn-invoice');
+      const result = document.getElementById('invoice-result');
+
+      if (!raw || raw <= 0) { alert('Ingresá un monto válido'); return; }
+
+      let sats;
+      if (currentMode === 'sats') {
+        sats = Math.round(raw);
+      } else {
+        sats = fiatToSats(raw, currentCurrency);
+        if (!sats || sats < 1) { alert('Monto demasiado pequeño para generar un invoice'); return; }
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Generando invoice...';
+      result.classList.remove('show');
+      clearInvoiceTimer();
+      stopPaymentPolling();
+
+      try {
+        const ln = new LightningAddress(currentLnAddress);
+        await ln.fetch();
+        const concept = document.getElementById('input-concept').value.trim();
+        const invoice = await ln.requestInvoice({
+          satoshi: sats,
+          comment: concept || undefined,
+        });
+
+        currentBolt11 = invoice.paymentRequest;
+        lastInvoiceSats = sats;
+        lastInvoiceConcept = concept;
+        lastInvoiceFiatAmount = currentMode === 'fiat' ? raw : 0;
+        lastInvoiceFiatCurrency = currentMode === 'fiat' ? currentCurrency : '';
+
+        const canvas = document.getElementById('invoice-canvas');
+        canvas.classList.remove('canvas-expired');
+        await QRCode.toCanvas(canvas, invoice.paymentRequest.toUpperCase(), {
+          width: 240, margin: 1,
+          color: { dark: '#000000', light: '#FFFFFF' }
+        });
+
+        document.getElementById('bolt11-display').textContent = invoice.paymentRequest;
+        document.getElementById('bolt11-display').classList.add('hidden');
+        document.getElementById('bolt11-toggle').textContent = 'Ver código técnico';
+        document.getElementById('invoice-expired').classList.remove('show');
+        document.getElementById('btn-confirm-payment').style.display = '';
+
+        // Show amount badge
+        let badgeText = `${sats.toLocaleString('es-AR')} sats`;
+        if (lastInvoiceFiatAmount > 0) {
+          badgeText = `${formatFiat(lastInvoiceFiatAmount, lastInvoiceFiatCurrency)} (${sats.toLocaleString('es-AR')} sats)`;
+        }
+        document.getElementById('invoice-amount-badge').textContent = badgeText;
+        result.classList.add('show');
+        startInvoiceTimer();
+
+        // Start automatic payment verification
+        const invoiceQRWrapper = document.querySelector('#invoice-result .invoice-qr-wrapper');
+        let verifyUrl = invoice.verify;
+
+        // If no verify URL, try to construct it from LNURL callback
+        if (!verifyUrl && invoice.paymentHash && ln.lnurlpData?.callback) {
+          const callbackUrl = ln.lnurlpData.callback;
+          // Replace /callback with /verify/{hash}
+          const constructed = callbackUrl.replace(/\/callback\/?$/, `/verify/${invoice.paymentHash}`);
+          if (constructed !== callbackUrl) {
+            verifyUrl = constructed;
+          }
+        }
+
+        if (verifyUrl) {
+          startPaymentPolling(verifyUrl);
+          if (invoiceQRWrapper) invoiceQRWrapper.classList.add('waiting');
+          document.getElementById('no-verify-hint').classList.remove('show');
+        } else {
+          document.getElementById('polling-status').classList.remove('show');
+          document.getElementById('no-verify-hint').classList.add('show');
+          if (invoiceQRWrapper) invoiceQRWrapper.classList.remove('waiting');
+        }
+
+      } catch (err) {
+        alert('Error generando invoice: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Crear QR para cobrar ⚡';
+      }
+    };
+
+    window.downloadInvoiceQR = function () {
+      const canvas = document.getElementById('invoice-canvas');
+      const link = document.createElement('a');
+      link.download = 'invoice-qr.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    };
+
+    window.copyBolt11 = async function () {
+      await navigator.clipboard.writeText(currentBolt11);
+      const btn = document.getElementById('btn-copy-bolt11');
+      btn.textContent = '✓ Copiado!';
+      setTimeout(() => { btn.textContent = '📋 Copiar'; }, 2000);
+    };
+
+    // ── Share invoice (Web Share API) ──
+
+    // ── Toggle bolt11 details ──
+
+    window.toggleBolt11 = function () {
+      const el = document.getElementById('bolt11-display');
+      const btn = document.getElementById('bolt11-toggle');
+      el.classList.toggle('hidden');
+      btn.textContent = el.classList.contains('hidden') ? 'Ver código técnico' : 'Ocultar código técnico';
+    };
+
+    window.shareInvoice = async function () {
+      const btn = document.getElementById('btn-share');
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Pago Lightning', text: currentBolt11 });
+        } catch {}
+      } else {
+        await navigator.clipboard.writeText(currentBolt11);
+        btn.textContent = '✓ Copiado!';
+        setTimeout(() => { btn.textContent = '🔗 Compartir'; }, 2000);
+      }
+    };
+
+    // ══════════════════════════════════════════════════════
+    //  INVOICE TIMER
+    // ══════════════════════════════════════════════════════
+
+    function startInvoiceTimer() {
+      let secs = 600;
+      const timerEl  = document.getElementById('invoice-timer');
+      const displayEl = document.getElementById('timer-display');
+      timerEl.className = 'invoice-timer';
+
+      invoiceTimerInterval = setInterval(() => {
+        secs--;
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        displayEl.textContent = `⏱ ${m}:${s.toString().padStart(2, '0')}`;
+
+        if (secs <= 60) timerEl.className = 'invoice-timer warning';
+
+        if (secs <= 0) {
+          clearInvoiceTimer();
+          stopPaymentPolling();
+          timerEl.className = 'invoice-timer expired';
+          displayEl.textContent = '⏱ 0:00';
+          document.getElementById('invoice-canvas').classList.add('canvas-expired');
+          document.getElementById('invoice-expired').classList.add('show');
+          document.getElementById('btn-confirm-payment').style.display = 'none';
+        }
+      }, 1000);
+    }
+
+    function clearInvoiceTimer() {
+      clearInterval(invoiceTimerInterval);
+      invoiceTimerInterval = null;
+    }
+
+    window.resetInvoice = function () {
+      clearInvoiceTimer();
+      stopPaymentPolling();
+      document.getElementById('input-amount').value = '';
+      document.getElementById('input-concept').value = '';
+      document.getElementById('invoice-result').classList.remove('show');
+      document.getElementById('invoice-expired').classList.remove('show');
+      document.getElementById('invoice-canvas').classList.remove('canvas-expired');
+      updateConversion();
+      document.getElementById('input-amount').focus();
+    };
+
+    // ══════════════════════════════════════════════════════
+    //  PAYMENT DETECTION
+    // ══════════════════════════════════════════════════════
+
+    function startPaymentPolling(verifyUrl) {
+      let errorCount = 0;
+      const MAX_ERRORS = 3;
+
+      async function checkPayment() {
+        try {
+          const res = await fetch(verifyUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          errorCount = 0; // Reset on success
+          if (data.settled === true || data.paid === true) {
+            stopPaymentPolling();
+            onPaymentReceived();
+            return;
+          }
+        } catch {
+          errorCount++;
+          if (errorCount >= MAX_ERRORS) {
+            // Verify endpoint not working — stop polling silently, keep manual button
+            stopPaymentPolling();
+            document.getElementById('no-verify-hint').classList.add('show');
+            return;
+          }
+        }
+      }
+
+      document.getElementById('polling-status').classList.add('show');
+      document.getElementById('no-verify-hint').classList.remove('show');
+
+      // Check immediately, then every 2 seconds
+      checkPayment();
+      paymentPollInterval = setInterval(checkPayment, 2000);
+    }
+
+    function stopPaymentPolling() {
+      clearInterval(paymentPollInterval);
+      paymentPollInterval = null;
+      document.getElementById('polling-status').classList.remove('show');
+      const qrWrapper = document.querySelector('#invoice-result .invoice-qr-wrapper');
+      if (qrWrapper) qrWrapper.classList.remove('waiting');
+    }
+
+    window.confirmPayment = function () {
+      stopPaymentPolling();
+      onPaymentReceived();
+    };
+
+    function onPaymentReceived() {
+      clearInvoiceTimer();
+      stopPaymentPolling();
+
+      // Save to history
+      addToHistory({
+        sats: lastInvoiceSats,
+        fiatAmount: lastInvoiceFiatAmount,
+        fiatCurrency: lastInvoiceFiatCurrency,
+        concept: lastInvoiceConcept,
+        timestamp: Date.now(),
+        status: 'confirmed',
+      });
+
+      // Build success display
+      let amountText = `${lastInvoiceSats.toLocaleString('es-AR')} sats`;
+      if (lastInvoiceFiatAmount > 0) {
+        amountText += ` (${formatFiat(lastInvoiceFiatAmount, lastInvoiceFiatCurrency)})`;
+      }
+      document.getElementById('success-amount').textContent = amountText;
+      document.getElementById('success-concept').textContent = lastInvoiceConcept || '';
+
+      // Show overlay
+      document.getElementById('payment-success').classList.add('show');
+
+      // Sound + confetti
+      playPaymentSound();
+      launchConfetti();
+
+      // Auto-dismiss after 8 seconds
+      setTimeout(() => {
+        dismissSuccess();
+      }, 8000);
+    }
+
+    window.dismissSuccess = function () {
+      document.getElementById('payment-success').classList.remove('show');
+      resetInvoice();
+    };
+
+    // ══════════════════════════════════════════════════════
+    //  PAYMENT SOUND (Web Audio API)
+    // ══════════════════════════════════════════════════════
+
+    function playPaymentSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+
+        // Pleasant ascending C-E-G chord
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.12);
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.15, now + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8 + i * 0.12);
+          osc.start(now + i * 0.12);
+          osc.stop(now + 1 + i * 0.12);
+        });
+      } catch {}
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  CONFETTI
+    // ══════════════════════════════════════════════════════
+
+    function launchConfetti() {
+      const colors = ['#00ff9d', '#ffc800', '#ff6b6b', '#4dabf7', '#ff922b', '#a9e34b', '#cc5de8'];
+      for (let i = 0; i < 60; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = (Math.random() * 100) + 'vw';
+        piece.style.top = '-10px';
+        piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = (Math.random() * 0.6) + 's';
+        piece.style.animationDuration = (2.5 + Math.random() * 2) + 's';
+        piece.style.width = (6 + Math.random() * 10) + 'px';
+        piece.style.height = (6 + Math.random() * 10) + 'px';
+        piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 5000);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  HISTORY (localStorage)
+    // ══════════════════════════════════════════════════════
+
+    function getHistory() {
+      try {
+        return JSON.parse(localStorage.getItem('relampago_history')) || [];
+      } catch { return []; }
+    }
+
+    function saveHistory(entries) {
+      localStorage.setItem('relampago_history', JSON.stringify(entries));
+    }
+
+    function addToHistory(entry) {
+      const history = getHistory();
+      history.unshift(entry);
+      // Keep last 100 entries
+      if (history.length > 100) history.length = 100;
+      saveHistory(history);
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('history-list');
+      const summaryEl = document.getElementById('history-summary');
+      const clearBtn = document.getElementById('btn-clear-history');
+      const history = getHistory();
+
+      if (history.length === 0) {
+        list.innerHTML = '<div class="history-empty">Todavía no cobraste nada.<br>Andá a la pestaña 💰 <strong>Cobrar</strong> para recibir tu primer pago.</div>';
+        summaryEl.innerHTML = '';
+        clearBtn.style.display = 'none';
+        return;
+      }
+
+      clearBtn.style.display = '';
+
+      // Summary
+      const confirmed = history.filter(e => e.status === 'confirmed');
+      const totalSats = confirmed.reduce((s, e) => s + (e.sats || 0), 0);
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const todayEntries = confirmed.filter(e => e.timestamp >= todayStart.getTime());
+      const todaySats = todayEntries.reduce((s, e) => s + (e.sats || 0), 0);
+
+      summaryEl.innerHTML = `
+        <div class="history-summary">
+          <div class="history-summary-item">
+            <div class="value">${todayEntries.length}</div>
+            <div class="label">Cobros hoy</div>
+          </div>
+          <div class="history-summary-item">
+            <div class="value">${todaySats.toLocaleString('es-AR')}</div>
+            <div class="label">Sats hoy</div>
+          </div>
+          <div class="history-summary-item">
+            <div class="value">${totalSats.toLocaleString('es-AR')}</div>
+            <div class="label">Sats total</div>
+          </div>
+        </div>
+      `;
+
+      // Group by date
+      const groups = {};
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const yesterday = today - 86400000;
+
+      history.forEach(entry => {
+        const entryDate = new Date(entry.timestamp);
+        const entryDay = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate()).getTime();
+
+        let label;
+        if (entryDay === today) label = 'Hoy';
+        else if (entryDay === yesterday) label = 'Ayer';
+        else label = entryDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(entry);
+      });
+
+      let html = '';
+      for (const [label, entries] of Object.entries(groups)) {
+        html += `<div class="history-group-label">${label}</div>`;
+        for (const entry of entries) {
+          const time = new Date(entry.timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+          const icon = entry.status === 'confirmed' ? '✅' : '⏱';
+          let amountStr = `${(entry.sats || 0).toLocaleString('es-AR')} sats`;
+          if (entry.fiatAmount > 0 && entry.fiatCurrency) {
+            amountStr += ` · ${formatFiat(entry.fiatAmount, entry.fiatCurrency)}`;
+          }
+          html += `
+            <div class="history-item">
+              <span class="history-status">${icon}</span>
+              <div class="history-info">
+                <div class="amount">${amountStr}</div>
+                <div class="concept">${entry.concept || 'Sin concepto'}</div>
+              </div>
+              <span class="history-time">${time}</span>
+            </div>
+          `;
+        }
+      }
+
+      list.innerHTML = html;
+    }
+
+    window.clearHistory = function () {
+      if (!confirm('¿Seguro que querés vaciar el historial de cobros?')) return;
+      localStorage.removeItem('relampago_history');
+      renderHistory();
+    };
+
+    // ══════════════════════════════════════════════════════
+    //  URL PARAMS (Shareable Payment Page)
+    // ══════════════════════════════════════════════════════
+
+    function checkURLParams() {
+      const params = new URLSearchParams(window.location.search);
+      const payAddress = params.get('pay');
+      const payName = params.get('name');
+
+      if (payAddress && payAddress.includes('@')) {
+        // Auto-fill and go to dashboard
+        document.getElementById('input-name').value = payName || payAddress.split('@')[0];
+        document.getElementById('input-address').value = payAddress;
+
+        // Auto-generate profile
+        currentLnAddress = payAddress.toLowerCase();
+        currentBusinessName = payName || payAddress.split('@')[0];
+        localStorage.setItem('relampago_profile', JSON.stringify({
+          name: currentBusinessName,
+          address: currentLnAddress
+        }));
+
+        // Directly show dashboard (validate in background)
+        showDashboard(currentBusinessName, currentLnAddress);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  PWA
+    // ══════════════════════════════════════════════════════
+
+    function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      }
+    }
+
+    // Capture install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPWAPrompt = e;
+      document.getElementById('pwa-banner').classList.add('show');
+    });
+
+    document.getElementById('pwa-install-btn').addEventListener('click', async () => {
+      if (!deferredPWAPrompt) return;
+      deferredPWAPrompt.prompt();
+      await deferredPWAPrompt.userChoice;
+      deferredPWAPrompt = null;
+      document.getElementById('pwa-banner').classList.remove('show');
+    });
+
+    window.dismissPWA = function () {
+      document.getElementById('pwa-banner').classList.remove('show');
+    };
+
+    // ══════════════════════════════════════════════════════
+    //  INIT (after all declarations — avoids TDZ)
+    // ══════════════════════════════════════════════════════
+
+    // Set initial UI state for fiat mode (default for novices)
+    document.getElementById('currency-row').style.display = 'flex';
+    document.getElementById('amount-unit').textContent = currentCurrency;
+    renderQuickAmounts();
+    loadSavedProfile();
+    checkURLParams();
+    registerServiceWorker();
+
+    // ── Event listeners ──
+
+    document.getElementById('input-name').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('input-address').focus();
+    });
+    document.getElementById('input-address').addEventListener('keydown', e => {
+      if (e.key === 'Enter') window.generateProfile();
+    });
+    document.getElementById('input-address').addEventListener('input', onAddressInput);
+    document.getElementById('input-amount').addEventListener('keydown', e => {
+      if (e.key === 'Enter') window.generateInvoice();
+    });
+    document.getElementById('fixed-amount-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') window.generateFixedQR();
+    });
   </script>
 </body>
 </html>
