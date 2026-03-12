@@ -965,7 +965,7 @@
           <small>Panel de cobro</small>
           <span id="dash-name"></span>
         </div>
-        <button class="btn-back" onclick="goBack()">← Editar</button>
+        <button class="btn-back" onclick="goBack()" aria-label="Volver a editar perfil">← Editar</button>
       </div>
 
       <div class="tabs">
@@ -1136,7 +1136,7 @@
     <div class="success-title">¡Pago recibido!</div>
     <div class="success-amount" id="success-amount"></div>
     <div class="success-concept" id="success-concept"></div>
-    <button class="success-dismiss" onclick="dismissSuccess()">Listo</button>
+    <button class="success-dismiss" onclick="dismissSuccess()" aria-label="Cerrar notificación de pago">Listo</button>
   </div>
 
   <!-- ── PWA Install Banner ── -->
@@ -1145,7 +1145,7 @@
       <strong>Instalá RelamPago</strong> en tu pantalla de inicio
     </div>
     <button class="pwa-install-btn" id="pwa-install-btn">Instalar</button>
-    <button class="pwa-install-close" onclick="dismissPWA()">×</button>
+    <button class="pwa-install-close" onclick="dismissPWA()" aria-label="Cerrar banner de instalación">×</button>
   </div>
 
   <script type="module">
@@ -1729,6 +1729,9 @@
       document.getElementById('invoice-result').classList.remove('show');
       document.getElementById('invoice-expired').classList.remove('show');
       document.getElementById('invoice-canvas').classList.remove('canvas-expired');
+      document.getElementById('timer-display').textContent = '⏱ 10:00';
+      document.getElementById('invoice-timer').className = 'invoice-timer';
+      document.getElementById('no-verify-hint').classList.remove('show');
       updateConversion();
       document.getElementById('input-amount').focus();
     };
