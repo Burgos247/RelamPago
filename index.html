@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>⚡ RelamPago — Cobrá con Lightning</title>
   <meta name="description" content="Cobrá con Lightning Network. Generá tu QR y empezá a recibir pagos al instante.">
   <meta name="theme-color" content="#0a0f1a">
@@ -903,6 +903,16 @@
       padding: 4px;
     }
 
+    /* Tablets y pantallas medianas */
+    @media (max-width: 640px) {
+      .dashboard { padding: 24px 16px 50px; }
+      .business-name { font-size: 1.5rem; }
+      .qr-card { padding: 28px 20px; }
+      .invoice-card { padding: 28px 20px; }
+      .history-card { padding: 28px 20px; }
+    }
+
+    /* Moviles */
     @media (max-width: 500px) {
       .setup-card { padding: 32px 20px; }
       .qr-actions { flex-direction: column; }
@@ -910,6 +920,67 @@
       .invoice-card { padding: 24px 16px; }
       .history-card { padding: 24px 16px; }
       .tab { font-size: 0.75rem; padding: 9px 4px; }
+      .logo { font-size: 1.8rem; }
+      .tagline { font-size: 0.9rem; margin-bottom: 28px; }
+      .dash-header { flex-direction: column; gap: 12px; }
+      .btn-back { align-self: flex-start; }
+      .business-name { font-size: 1.4rem; }
+      .business-name small { font-size: 0.7rem; }
+      .quick-amounts { gap: 6px; }
+      .quick-btn { padding: 4px 10px; font-size: 0.78rem; }
+      .mode-toggle { flex-direction: column; gap: 2px; }
+      .mode-btn { padding: 10px 12px; }
+      .amount-input-wrapper input { font-size: 1.3rem; }
+    }
+
+    /* Moviles muy pequenos */
+    @media (max-width: 360px) {
+      .setup-card { padding: 24px 16px; }
+      .logo { font-size: 1.5rem; }
+      .tagline { font-size: 0.85rem; }
+      .tabs { gap: 2px; padding: 3px; }
+      .tab { font-size: 0.68rem; padding: 8px 2px; }
+      .qr-wrapper { padding: 12px; }
+      .address-badge { font-size: 0.8rem; padding: 8px 12px; }
+      .qr-hint { font-size: 0.78rem; }
+      .invoice-card h3 { font-size: 0.95rem; }
+      .btn-primary { padding: 13px; font-size: 0.95rem; }
+      .btn-secondary { font-size: 0.82rem; padding: 10px; }
+      .help-banner { font-size: 0.82rem; padding: 14px; }
+    }
+
+    /* Soporte para safe-area en dispositivos con notch */
+    @supports (padding: max(0px)) {
+      .dashboard {
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
+        padding-bottom: max(50px, env(safe-area-inset-bottom));
+      }
+      .setup-container {
+        padding-left: max(20px, env(safe-area-inset-left));
+        padding-right: max(20px, env(safe-area-inset-right));
+      }
+      .pwa-install-banner {
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+      }
+    }
+
+    /* Mejora de touch targets para movil */
+    @media (hover: none) and (pointer: coarse) {
+      .btn-primary,
+      .btn-secondary,
+      .tab,
+      .quick-btn,
+      .mode-btn {
+        min-height: 44px;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="number"],
+      .currency-select {
+        min-height: 48px;
+        font-size: 16px; /* Previene zoom en iOS */
+      }
     }
   </style>
 </head>
@@ -1443,7 +1514,7 @@
 
     // ══════════════════════════════════════════════════════
     //  FIAT / RATES
-    // ══════════════════════════════════════════════════════
+    // ══════════════════��═══════════════════════════════════
 
     async function fetchRates() {
       const conv = document.getElementById('conversion-display');
