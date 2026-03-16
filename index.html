@@ -9,6 +9,7 @@
   <link rel="manifest" href="/manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%230a0f1a'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='110'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1018,7 +1019,7 @@
 
           <!-- Share Link -->
           <div class="share-section">
-            <button class="btn-secondary" onclick="sharePaymentPage()" style="width:100%;margin-top:10px;">🔗 Compartir mi página de cobro</button>
+            <button class="btn-secondary" id="btn-share-page" onclick="sharePaymentPage()" style="width:100%;margin-top:10px;">🔗 Compartir mi página de cobro</button>
           </div>
         </div>
       </div>
@@ -1232,6 +1233,20 @@
       el.classList.add('show');
     }
 
+    function showToast(msg) {
+      // Reuse or create a toast element for dashboard-level errors
+      let toast = document.getElementById('app-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'app-toast';
+        toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#ff6b6b;color:#fff;padding:12px 24px;border-radius:12px;font-size:0.9rem;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none;text-align:center;max-width:90vw;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = '⚠️ ' + msg;
+      toast.style.opacity = '1';
+      setTimeout(() => { toast.style.opacity = '0'; }, 4000);
+    }
+
     async function showDashboard(name, address) {
       const canvas = document.getElementById('qr-canvas');
       await QRCode.toCanvas(canvas, `lightning:${address}`, {
@@ -1331,14 +1346,33 @@
       link.click();
     };
 
+    async function safeClipboardWrite(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        // Fallback: select text for manual copy
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch {}
+        ta.remove();
+        return true;
+      }
+    }
+
     window.copyAddress = async function () {
-      await navigator.clipboard.writeText(currentLnAddress);
+      await safeClipboardWrite(currentLnAddress);
       const btn = document.getElementById('btn-copy');
       btn.textContent = '✓ Copiado!';
       setTimeout(() => { btn.textContent = '📋 Copiar dirección'; }, 2000);
     };
 
     window.goBack = function () {
+      clearInvoiceTimer();
+      stopPaymentPolling();
       document.getElementById('screen-setup').classList.add('active');
       document.getElementById('screen-dashboard').classList.remove('active');
       document.getElementById('btn-generate').disabled = false;
@@ -1376,7 +1410,7 @@
 
     window.generateFixedQR = async function () {
       const amountRaw = parseInt(document.getElementById('fixed-amount-input').value);
-      if (!amountRaw || amountRaw < 1) { alert('Ingresá un monto en sats'); return; }
+      if (!amountRaw || amountRaw < 1) { showToast('Ingresá un monto en sats'); return; }
 
       try {
         const ln = new LightningAddress(currentLnAddress);
@@ -1394,11 +1428,11 @@
         });
 
         const badge = document.getElementById('fixed-badge');
-        badge.textContent = `⚡ Precio fijo: ${amountRaw.toLocaleString('es-AR')} sats`;
+        badge.textContent = `⚡ Precio fijo: ${amountRaw.toLocaleString('es-AR')} sats — expira en ~10 min`;
         badge.classList.add('show');
         document.getElementById('btn-clear-fixed').style.display = '';
       } catch (err) {
-        alert('Error generando QR fijo: ' + err.message);
+        showToast('Error generando QR fijo: ' + err.message);
       }
     };
 
@@ -1436,8 +1470,8 @@
         } catch {}
       }
 
-      await navigator.clipboard.writeText(shareUrl);
-      const btn = event.target;
+      await safeClipboardWrite(shareUrl);
+      const btn = document.getElementById('btn-share-page');
       const orig = btn.textContent;
       btn.textContent = '✓ Link copiado!';
       setTimeout(() => { btn.textContent = orig; }, 2500);
@@ -1447,6 +1481,9 @@
     //  FIAT / RATES
     // ══════════════════════════════════════════════════════
 
+    let rateRefreshInterval = null;
+    let lastRateFetch = 0;
+
     async function fetchRates() {
       const conv = document.getElementById('conversion-display');
       conv.className = 'conversion-display loading';
@@ -1455,9 +1492,24 @@
         const res  = await fetch('https://api.yadio.io/exrates/BTC');
         const data = await res.json();
         btcRates = data.BTC;
+        lastRateFetch = Date.now();
         updateConversion();
         renderQuickAmounts();
         updateRateBadge();
+
+        // Auto-refresh rates every 5 minutes
+        if (!rateRefreshInterval) {
+          rateRefreshInterval = setInterval(async () => {
+            try {
+              const r = await fetch('https://api.yadio.io/exrates/BTC');
+              const d = await r.json();
+              btcRates = d.BTC;
+              lastRateFetch = Date.now();
+              updateConversion();
+              updateRateBadge();
+            } catch { /* silent retry next interval */ }
+          }, 5 * 60 * 1000);
+        }
       } catch {
         conv.className = 'conversion-display error';
         conv.textContent = '⚠️ No se pudo cargar la cotización de Yadio.io';
@@ -1518,12 +1570,16 @@
         ? QUICK_SATS
         : (QUICK_FIAT[currentCurrency] || QUICK_FIAT.USD);
 
-      container.innerHTML = items.map(v => {
-        const label = currentMode === 'sats'
+      container.innerHTML = '';
+      items.forEach(v => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-btn';
+        btn.textContent = currentMode === 'sats'
           ? v.toLocaleString('es-AR')
           : formatFiat(v, currentCurrency);
-        return `<button class="quick-btn" onclick="setAmount(${v})">${label}</button>`;
-      }).join('');
+        btn.addEventListener('click', () => setAmount(v));
+        container.appendChild(btn);
+      });
     }
 
     window.setMode = function (mode) {
@@ -1548,7 +1604,15 @@
       updateRateBadge();
     };
 
-    window.onAmountInput = function () { updateConversion(); };
+    window.onAmountInput = function () {
+      const input = document.getElementById('input-amount');
+      if (currentMode === 'sats') {
+        // Force integer values for sats
+        const val = parseInt(input.value);
+        if (input.value && !isNaN(val)) input.value = Math.max(1, val);
+      }
+      updateConversion();
+    };
 
     window.setAmount = function (amount) {
       document.getElementById('input-amount').value = amount;
@@ -1564,14 +1628,14 @@
       const btn  = document.getElementById('btn-invoice');
       const result = document.getElementById('invoice-result');
 
-      if (!raw || raw <= 0) { alert('Ingresá un monto válido'); return; }
+      if (!raw || raw <= 0) { showToast('Ingresá un monto válido'); return; }
 
       let sats;
       if (currentMode === 'sats') {
         sats = Math.round(raw);
       } else {
         sats = fiatToSats(raw, currentCurrency);
-        if (!sats || sats < 1) { alert('Monto demasiado pequeño para generar un invoice'); return; }
+        if (!sats || sats < 1) { showToast('Monto demasiado pequeño para generar un invoice'); return; }
       }
 
       btn.disabled = true;
@@ -1642,7 +1706,7 @@
         }
 
       } catch (err) {
-        alert('Error generando invoice: ' + err.message);
+        showToast('Error generando invoice: ' + err.message);
       } finally {
         btn.disabled = false;
         btn.textContent = 'Crear QR para cobrar ⚡';
@@ -1658,7 +1722,7 @@
     };
 
     window.copyBolt11 = async function () {
-      await navigator.clipboard.writeText(currentBolt11);
+      await safeClipboardWrite(currentBolt11);
       const btn = document.getElementById('btn-copy-bolt11');
       btn.textContent = '✓ Copiado!';
       setTimeout(() => { btn.textContent = '📋 Copiar'; }, 2000);
@@ -1682,7 +1746,7 @@
           await navigator.share({ title: 'Pago Lightning', text: currentBolt11 });
         } catch {}
       } else {
-        await navigator.clipboard.writeText(currentBolt11);
+        await safeClipboardWrite(currentBolt11);
         btn.textContent = '✓ Copiado!';
         setTimeout(() => { btn.textContent = '🔗 Compartir'; }, 2000);
       }
@@ -1830,9 +1894,15 @@
     //  PAYMENT SOUND (Web Audio API)
     // ══════════════════════════════════════════════════════
 
+    let sharedAudioCtx = null;
+
     function playPaymentSound() {
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+          sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (sharedAudioCtx.state === 'suspended') sharedAudioCtx.resume();
+        const ctx = sharedAudioCtx;
         const now = ctx.currentTime;
 
         // Pleasant ascending C-E-G chord
@@ -1954,9 +2024,15 @@
         groups[label].push(entry);
       });
 
+      function escapeHTML(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
       let html = '';
       for (const [label, entries] of Object.entries(groups)) {
-        html += `<div class="history-group-label">${label}</div>`;
+        html += `<div class="history-group-label">${escapeHTML(label)}</div>`;
         for (const entry of entries) {
           const time = new Date(entry.timestamp).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
           const icon = entry.status === 'confirmed' ? '✅' : '⏱';
@@ -1968,10 +2044,10 @@
             <div class="history-item">
               <span class="history-status">${icon}</span>
               <div class="history-info">
-                <div class="amount">${amountStr}</div>
-                <div class="concept">${entry.concept || 'Sin concepto'}</div>
+                <div class="amount">${escapeHTML(amountStr)}</div>
+                <div class="concept">${escapeHTML(entry.concept || 'Sin concepto')}</div>
               </div>
-              <span class="history-time">${time}</span>
+              <span class="history-time">${escapeHTML(time)}</span>
             </div>
           `;
         }
@@ -1990,26 +2066,36 @@
     //  URL PARAMS (Shareable Payment Page)
     // ══════════════════════════════════════════════════════
 
-    function checkURLParams() {
+    async function checkURLParams() {
       const params = new URLSearchParams(window.location.search);
       const payAddress = params.get('pay');
       const payName = params.get('name');
 
       if (payAddress && payAddress.includes('@')) {
-        // Auto-fill and go to dashboard
-        document.getElementById('input-name').value = payName || payAddress.split('@')[0];
-        document.getElementById('input-address').value = payAddress;
+        const cleanAddress = payAddress.toLowerCase().replace(/[^a-z0-9@._\-]/g, '');
+        const cleanName = (payName || cleanAddress.split('@')[0]).substring(0, 50);
 
-        // Auto-generate profile
-        currentLnAddress = payAddress.toLowerCase();
-        currentBusinessName = payName || payAddress.split('@')[0];
-        localStorage.setItem('relampago_profile', JSON.stringify({
-          name: currentBusinessName,
-          address: currentLnAddress
-        }));
+        // Validate Lightning Address before trusting URL params
+        try {
+          const ln = new LightningAddress(cleanAddress);
+          await ln.fetch();
 
-        // Directly show dashboard (validate in background)
-        showDashboard(currentBusinessName, currentLnAddress);
+          document.getElementById('input-name').value = cleanName;
+          document.getElementById('input-address').value = cleanAddress;
+
+          currentLnAddress = cleanAddress;
+          currentBusinessName = cleanName;
+          localStorage.setItem('relampago_profile', JSON.stringify({
+            name: currentBusinessName,
+            address: currentLnAddress
+          }));
+
+          await showDashboard(currentBusinessName, currentLnAddress);
+        } catch {
+          // Invalid address — just pre-fill the form
+          document.getElementById('input-name').value = cleanName;
+          document.getElementById('input-address').value = cleanAddress;
+        }
       }
     }
 
@@ -2027,7 +2113,10 @@
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPWAPrompt = e;
-      document.getElementById('pwa-banner').classList.add('show');
+      // Don't show if user previously dismissed
+      if (!localStorage.getItem('relampago_pwa_dismissed')) {
+        document.getElementById('pwa-banner').classList.add('show');
+      }
     });
 
     document.getElementById('pwa-install-btn').addEventListener('click', async () => {
@@ -2040,6 +2129,7 @@
 
     window.dismissPWA = function () {
       document.getElementById('pwa-banner').classList.remove('show');
+      localStorage.setItem('relampago_pwa_dismissed', '1');
     };
 
     // ══════════════════════════════════════════════════════

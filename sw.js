@@ -1,7 +1,15 @@
-const CACHE_NAME = 'relampago-v1';
+const CACHE_NAME = 'relampago-v2';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
+];
+
+// URLs that should NEVER be cached (APIs, payment verification, CDN modules)
+const NO_CACHE_PATTERNS = [
+  'api.yadio.io',
+  '/verify/',
+  '/callback/',
+  'esm.sh',
 ];
 
 self.addEventListener('install', event => {
@@ -23,11 +31,18 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Network first, fallback to cache (so we always get fresh content when online)
+  const url = event.request.url;
+
+  // Never cache API calls, payment verification, or CDN modules
+  if (NO_CACHE_PATTERNS.some(pattern => url.includes(pattern))) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Network first, fallback to cache for same-origin resources
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Cache successful responses
         if (response.ok && event.request.method === 'GET') {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
