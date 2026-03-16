@@ -1031,7 +1031,7 @@
 
           <!-- Toggle Fiat / Sats (fiat first for novices) -->
           <div class="mode-toggle">
-            <button class="mode-btn active" id="mode-btn-fiat" onclick="setMode('fiat')">💵 Pesos / Moneda</button>
+            <button class="mode-btn active" id="mode-btn-fiat" onclick="setMode('fiat')">💵 Moneda local</button>
             <button class="mode-btn" id="mode-btn-sats" onclick="setMode('sats')">⚡ Sats</button>
           </div>
 
@@ -1048,6 +1048,7 @@
               <option value="CLP">🇨🇱 CLP — Peso chileno</option>
               <option value="PEN">🇵🇪 PEN — Sol peruano</option>
               <option value="UYU">🇺🇾 UYU — Peso uruguayo</option>
+              <option value="VES">🇻🇪 VES — Bolívar venezolano</option>
             </select>
           </div>
 
@@ -1184,6 +1185,7 @@
       CLP: [500, 1000, 2000, 5000, 10000, 20000],
       PEN: [5, 10, 20, 50, 100, 200],
       UYU: [50, 100, 200, 500, 1000, 2000],
+      VES: [10, 20, 50, 100, 200, 500],
     };
 
     // ══════════════════════════════════════════════════════
@@ -1473,7 +1475,7 @@
     }
 
     function formatFiat(amount, currency) {
-      const noDecimals = ['ARS', 'CLP', 'UYU', 'COP', 'MXN'];
+      const noDecimals = ['ARS', 'CLP', 'UYU', 'COP', 'MXN', 'VES'];
       return new Intl.NumberFormat('es-AR', {
         style: 'currency',
         currency,
