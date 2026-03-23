@@ -1,29 +1,22 @@
 {
-  "name": "lightning-starter",
+  "name": "relampago",
   "version": "1.0.0",
-  "description": "Starter kit para Lightning Hackathons 2026 - La Crypta",
+  "description": "PWA para cobrar con Bitcoin Lightning Network — sin jerga técnica, pensada para comerciantes de LATAM",
   "type": "module",
+  "homepage": "https://relam-pago.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Burgos247/RelamPago"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "example:invoice": "node src/examples/create-invoice.js",
-    "example:pay": "node src/examples/pay-invoice.js",
-    "example:nwc": "node src/examples/nwc-connect.js",
-    "example:lnurl": "node src/examples/lnurl-pay.js"
+    "preview": "vite preview"
   },
-  "keywords": ["lightning", "bitcoin", "nostr", "nwc", "hackathon", "lacrypta"],
-  "author": "La Crypta",
+  "keywords": ["lightning", "bitcoin", "lnurl", "lightning-address", "pwa", "latam", "pagos"],
+  "author": "Oscar Burguillos",
   "license": "MIT",
-  "dependencies": {
-    "@getalby/lightning-tools": "^5.0.0",
-    "@getalby/sdk": "^3.0.0",
-    "@nostr-dev-kit/ndk": "^2.0.0",
-    "webln": "^0.3.0"
-  },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "typescript": "^5.0.0",
     "vite": "^5.0.0"
   }
 }
