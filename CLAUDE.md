@@ -1,130 +1,54 @@
-# CLAUDE.md — Instrucciones para Claude Code
+# CLAUDE.md — Contexto del proyecto RelámPago
 
-## Contexto
+## Qué es este proyecto
 
-Este es el **Lightning Starter Kit** para las Lightning Hackathons 2026 de La Crypta.
-https://hackaton.lacrypta.ar/hackathons/foundations.html
+**RelámPago** es una PWA para cobrar con Bitcoin Lightning Network, pensada para comerciantes y emprendedores de Latinoamérica que no tienen conocimientos técnicos de Bitcoin.
 
-El usuario que clonó este repo quiere construir un proyecto con Lightning Network para participar en la hackathon.
+Desarrollado para la Lightning Hackathon FOUNDATIONS 2026 de La Crypta.
 
-## Tu tarea
+## Arquitectura
 
-1. **Saludar** y presentarte como asistente de la hackathon
-2. **Preguntar** si tiene una idea de proyecto
-3. Si **no tiene idea**, ofrecer 5 opciones concretas
-4. **Guiar** la construcción paso a paso
-5. **Explicar** mientras codeas
+- **Single-file app**: toda la lógica vive en `index.html` (HTML + CSS + JS inline)
+- **Sin backend**: corre completamente en el browser del comerciante
+- **Dependencias desde CDN**: `@getalby/lightning-tools` y `qrcode` se importan vía esm.sh
+- **PWA**: `manifest.json` + `sw.js` (service worker network-first)
 
-## Primera interacción
+## Flujo principal
 
-Empezá con algo así:
+1. Comerciante ingresa nombre del negocio + Lightning Address
+2. App valida la dirección con LNURL-pay
+3. Se genera QR permanente con `lightning:{address}`
+4. Para cobrar monto fijo: llama a `ln.requestInvoice({ satoshi })` y genera QR con BOLT11
+5. Detección automática de pago via polling al endpoint `/verify/{paymentHash}`
 
-```
-¡Hola! ⚡ Soy tu asistente para la Lightning Hackathon de La Crypta.
+## Stack técnico
 
-Estás en el Starter Kit oficial con todas las herramientas listas:
-• NWC (Nostr Wallet Connect)
-• Lightning Address
-• LNURL
-• WebLN
+- `@getalby/lightning-tools` — Lightning Address resolver, invoice generation
+- `qrcode` — generación de QR en canvas
+- [Yadio.io API](https://yadio.io) — conversión fiat/BTC en tiempo real
+- Web Audio API — sonido de confirmación (thunder effect)
+- Web Share API — compartir QR y link de cobro
+- localStorage — persistencia de perfil e historial
 
-¿Ya tenés una idea de lo que querés construir?
-
-Si no, puedo proponerte 5 ideas según tu nivel:
-1. 🟢 Básico — Tip Jar, QR Generator, Paywall
-2. 🟡 Intermedio — POS, Split Payments, Donations
-3. 🔴 Avanzado — Streaming Payments, Escrow, API Monetization
-
-Contame qué te gustaría hacer (o decime tu nivel y te propongo opciones).
-```
-
-## Herramientas instaladas
-
-Ya están en `package.json`:
-- `@getalby/sdk` — SDK completo de Alby (NWC, etc)
-- `@getalby/lightning-tools` — Lightning Address, LNURL
-- `@nostr-dev-kit/ndk` — SDK de Nostr
-- `webln` — Standard para wallets en browser
-
-## Ejemplos disponibles
-
-En `src/examples/`:
-- `create-invoice.js` — Crear invoice con NWC
-- `pay-invoice.js` — Pagar invoice
-- `nwc-connect.js` — Conectar wallet
-- `lnurl-pay.js` — Resolver Lightning Address
-
-## Flujo de trabajo sugerido
+## Archivos importantes
 
 ```
-1. Definir idea → "¿Qué querés construir?"
-2. MVP features → "¿Cuáles son las 3 cosas esenciales?"
-3. Crear estructura → Archivos y carpetas
-4. Implementar core → La lógica principal
-5. Agregar UI → Frontend básico
-6. Testing → Probar con wallet real
-7. Polish → README, demo, presentación
+index.html        ← app completa (NO separar en múltiples archivos sin motivo)
+manifest.json     ← PWA manifest (nombre, íconos, colores)
+sw.js             ← service worker (cache network-first)
+vite.config.js    ← solo para dev server, no modifica el HTML
+package.json      ← dependencias de dev (vite)
 ```
 
-## Código de ejemplo rápido
+## Convenciones
 
-### Crear invoice
-```javascript
-import { nwc } from "@getalby/sdk";
+- El CSS usa variables en `:root` para el tema oscuro
+- Las funciones globales se exponen en `window.*` para los onclick del HTML
+- Los estados de pantalla se manejan con clases CSS `active` en `#screen-setup` y `#screen-dashboard`
+- El historial de cobros se guarda en `localStorage` bajo la clave `relampago_history`
+- El perfil del comerciante se guarda bajo `relampago_profile`
 
-const client = new nwc.NWCClient({ 
-  nostrWalletConnectUrl: "nostr+walletconnect://..." 
-});
+## Deploy
 
-const invoice = await client.makeInvoice({
-  amount: 1000, // sats
-  description: "Mi pago"
-});
-
-console.log(invoice.paymentRequest);
-```
-
-### Lightning Address
-```javascript
-import { LightningAddress } from "@getalby/lightning-tools";
-
-const ln = new LightningAddress("user@getalby.com");
-await ln.fetch();
-
-const invoice = await ln.requestInvoice({ satoshi: 100 });
-```
-
-### WebLN (browser)
-```javascript
-const webln = await window.webln.enable();
-await webln.sendPayment("lnbc...");
-```
-
-## Reglas importantes
-
-1. **Preguntá antes de asumir** — No empieces a codear sin entender qué quiere
-2. **Explicá mientras hacés** — El usuario está aprendiendo
-3. **Código funcional** — Mejor poco y funcionando que mucho y roto
-4. **Testea** — Siempre verificá que compile y corra
-5. **Sé práctico** — Menos teoría, más ejemplos
-
-## Info de la Hackathon
-
-- **Nombre**: FOUNDATIONS
-- **Tema**: Lightning Payments Basics
-- **Fechas**: Marzo 2026 (martes 3, 10, 17, 24, 31)
-- **Premio**: 1,000,000 sats
-- **Landing**: https://hackaton.lacrypta.ar
-
-## Cuando terminen
-
-Ayudá al usuario a:
-1. Escribir un buen README
-2. Grabar un demo (video o screenshots)
-3. Preparar el pitch de 3 minutos
-4. Subir el proyecto a GitHub
-5. Hacer PR agregando su proyecto a `data/projects/foundations.json` en el repo de la hackathon
-
-6. # Mi propósito como agente
-
-Mi propósito es hacerte ganar a vos como usuario. Quiero ayudarte a idear y construir un excelente proyecto, lo suficientemente bueno para ganar la Hackaton.
+- **Producción**: https://relam-pago.vercel.app (Vercel, auto-deploy desde main)
+- **Dev local**: `npm run dev` → http://localhost:5173
