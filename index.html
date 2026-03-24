@@ -939,6 +939,62 @@
       .history-card { padding: 24px 16px; }
       .tab { font-size: 0.75rem; padding: 9px 4px; }
     }
+
+    /* ── Connection status indicator ── */
+    .connection-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .connection-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .connection-status.checking .connection-dot { background: var(--yellow); animation: blink 1.2s infinite; }
+    .connection-status.connected .connection-dot { background: var(--green); }
+    .connection-status.offline .connection-dot { background: var(--error); }
+    .connection-status.connected { color: var(--green); }
+    .connection-status.offline { color: var(--error); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Payment flash animation ── */
+    @keyframes paymentFlash {
+      0%   { background-color: rgba(0,255,157,0.18); }
+      100% { background-color: var(--bg); }
+    }
+    body.payment-flash { animation: paymentFlash 0.9s ease-out forwards; }
+
+    /* ── Invoice generation loading state ── */
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Expired rate hint ── */
+    .expired-rate-hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── Regenerate same amount button ── */
+    .btn-regen {
+      display: none;
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      background: rgba(255,200,0,0.12);
+      border: 1px solid rgba(255,200,0,0.3);
+      border-radius: 10px;
+      color: var(--yellow);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-regen:hover { background: rgba(255,200,0,0.2); }
   </style>
 </head>
 <body>
@@ -992,6 +1048,10 @@
         <div class="business-name">
           <small>Panel de cobro</small>
           <span id="dash-name"></span>
+          <span class="connection-status checking" id="connection-status">
+            <span class="connection-dot"></span>
+            <span id="connection-label">Verificando...</span>
+          </span>
         </div>
         <button class="btn-back" onclick="goBack()">← Editar</button>
       </div>
@@ -1095,7 +1155,7 @@
           <input type="text" id="input-concept" placeholder="Ej: 2 empanadas, corte de pelo...">
 
           <button class="btn-primary" id="btn-invoice" onclick="generateInvoice()">
-            Crear QR para cobrar ⚡
+            <span id="btn-invoice-label">Crear QR para cobrar ⚡</span>
           </button>
 
           <div class="invoice-result" id="invoice-result">
@@ -1108,7 +1168,11 @@
 
             <div class="invoice-expired-overlay" id="invoice-expired">
               ⚠️ Este cobro expiró. Creá uno nuevo.
+              <div class="expired-rate-hint" id="expired-rate-hint"></div>
             </div>
+            <button class="btn-regen" id="btn-regen" onclick="regenSameAmount()">
+              🔄 Regenerar por el mismo monto
+            </button>
 
             <div class="invoice-qr-wrapper">
               <canvas id="invoice-canvas"></canvas>
@@ -1127,7 +1191,7 @@
               <span class="polling-dot"></span> Esperando pago... se detectará automáticamente
             </div>
             <div class="no-verify-hint" id="no-verify-hint">
-              ⚠️ Tu proveedor no soporta verificación automática.
+              ⚠️ No pudimos detectar el pago automáticamente. Pedile al cliente que te muestre la confirmación, o presioná "Confirmar pago recibido" cuando lo veas.
             </div>
 
             <!-- Confirm Payment (manual fallback) -->
@@ -1293,6 +1357,24 @@
       document.getElementById('dash-address').textContent = address;
       document.getElementById('screen-setup').classList.remove('active');
       document.getElementById('screen-dashboard').classList.add('active');
+      // Async connection check — don't block dashboard display
+      checkConnectionStatus(address);
+    }
+
+    async function checkConnectionStatus(address) {
+      const statusEl = document.getElementById('connection-status');
+      const labelEl  = document.getElementById('connection-label');
+      statusEl.className = 'connection-status checking';
+      labelEl.textContent = 'Verificando...';
+      try {
+        const ln = new LightningAddress(address);
+        await ln.fetch();
+        statusEl.className = 'connection-status connected';
+        labelEl.textContent = 'Conectado ✓';
+      } catch {
+        statusEl.className = 'connection-status offline';
+        labelEl.textContent = 'Sin conexión';
+      }
     }
 
     // ══════════════════════════════════════════════════════
@@ -1654,23 +1736,29 @@
     //  INVOICE GENERATION
     // ══════════════════════════════════════════════════════
 
-    window.generateInvoice = async function () {
-      const raw  = parseFloat(document.getElementById('input-amount').value);
+    window.generateInvoice = async function (prefillSats) {
+      const raw  = prefillSats != null ? null : parseFloat(document.getElementById('input-amount').value);
       const btn  = document.getElementById('btn-invoice');
+      const btnLabel = document.getElementById('btn-invoice-label');
       const result = document.getElementById('invoice-result');
 
-      if (!raw || raw <= 0) { showToast('Ingresá un monto válido'); return; }
+      if (prefillSats == null && (!raw || raw <= 0)) { showToast('Ingresá un monto válido'); return; }
 
       let sats;
-      if (currentMode === 'sats') {
+      if (prefillSats != null) {
+        sats = prefillSats;
+      } else if (currentMode === 'sats') {
         sats = Math.round(raw);
       } else {
         sats = fiatToSats(raw, currentCurrency);
-        if (!sats || sats < 1) { showToast('Monto demasiado pequeño para generar un invoice'); return; }
       }
 
+      // Min / max validation
+      if (!sats || sats < 1) { showToast('El monto es demasiado pequeño (mínimo 1 sat)'); return; }
+      if (sats > 10_000_000) { showToast('El monto supera el límite de 0.1 BTC por cobro'); return; }
+
       btn.disabled = true;
-      btn.textContent = 'Generando invoice...';
+      btnLabel.textContent = '⏳ Generando...';
       result.classList.remove('show');
       clearInvoiceTimer();
       stopPaymentPolling();
@@ -1737,10 +1825,17 @@
         }
 
       } catch (err) {
-        showToast('Error generando invoice: ' + err.message);
+        const isNetworkError = err instanceof TypeError || err.message?.includes('fetch') || err.message?.includes('network') || err.message?.includes('NetworkError');
+        if (isNetworkError) {
+          showToast('Sin conexión. Verificá tu internet e intentá de nuevo.');
+        } else if (err.message?.includes('unreachable') || err.message?.includes('not found') || err.message?.includes('404')) {
+          showToast('Lightning Address no encontrada o inactiva. Verificá que sea válida.');
+        } else {
+          showToast('Error al generar QR: ' + (err.message || 'Intentá de nuevo'));
+        }
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Crear QR para cobrar ⚡';
+        btnLabel.textContent = 'Crear QR para cobrar ⚡';
       }
     };
 
@@ -1807,8 +1902,17 @@
           timerEl.className = 'invoice-timer expired';
           displayEl.textContent = '⏱ 0:00';
           document.getElementById('invoice-canvas').classList.add('canvas-expired');
-          document.getElementById('invoice-expired').classList.add('show');
+          const expiredEl = document.getElementById('invoice-expired');
+          expiredEl.classList.add('show');
           document.getElementById('btn-confirm-payment').style.display = 'none';
+          document.getElementById('btn-regen').style.display = 'block';
+          // Show rate at expiry moment
+          const rateHint = document.getElementById('expired-rate-hint');
+          if (lastInvoiceFiatCurrency && btcRates[lastInvoiceFiatCurrency]) {
+            rateHint.textContent = `Cotización al momento del cobro: ${formatFiat(btcRates[lastInvoiceFiatCurrency], lastInvoiceFiatCurrency)} por BTC`;
+          } else {
+            rateHint.textContent = `El cobro era por ${lastInvoiceSats.toLocaleString('es-AR')} sats`;
+          }
         }
       }, 1000);
     }
@@ -1826,8 +1930,21 @@
       document.getElementById('invoice-result').classList.remove('show');
       document.getElementById('invoice-expired').classList.remove('show');
       document.getElementById('invoice-canvas').classList.remove('canvas-expired');
+      document.getElementById('btn-regen').style.display = 'none';
+      document.getElementById('expired-rate-hint').textContent = '';
       updateConversion();
       document.getElementById('input-amount').focus();
+    };
+
+    window.regenSameAmount = async function () {
+      const sats = lastInvoiceSats;
+      if (!sats || sats < 1) { showToast('No hay un monto guardado'); return; }
+      document.getElementById('invoice-expired').classList.remove('show');
+      document.getElementById('invoice-canvas').classList.remove('canvas-expired');
+      document.getElementById('btn-regen').style.display = 'none';
+      document.getElementById('expired-rate-hint').textContent = '';
+      document.getElementById('btn-confirm-payment').style.display = '';
+      await window.generateInvoice(sats);
     };
 
     // ══════════════════════════════════════════════════════
@@ -1884,6 +2001,10 @@
     function onPaymentReceived() {
       clearInvoiceTimer();
       stopPaymentPolling();
+
+      // Payment flash animation
+      document.body.classList.add('payment-flash');
+      setTimeout(() => document.body.classList.remove('payment-flash'), 900);
 
       // Save to history
       addToHistory({
